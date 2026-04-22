@@ -74,6 +74,18 @@ CREATE TABLE IF NOT EXISTS disputes_dispute (
   geom geometry(Polygon, 4326)
 );
 
+-- Mine-to-Mine Disputes
+CREATE TABLE IF NOT EXISTS disputes_mine_mine (
+  id BIGSERIAL PRIMARY KEY,
+  mine_claim_a_id BIGINT NOT NULL REFERENCES spatial_data_mineclaim(id) ON DELETE CASCADE,
+  mine_claim_b_id BIGINT NOT NULL REFERENCES spatial_data_mineclaim(id) ON DELETE CASCADE,
+  conflict_area DOUBLE PRECISION,
+  status VARCHAR(20) NOT NULL DEFAULT 'OPEN',
+  detected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  resolved_at TIMESTAMPTZ,
+  geom geometry(Polygon, 4326)
+);
+
 -- Hotspots
 CREATE TABLE IF NOT EXISTS disputes_hotspot (
   id BIGSERIAL PRIMARY KEY,
@@ -88,6 +100,7 @@ CREATE INDEX IF NOT EXISTS idx_mineclaim_geom ON spatial_data_mineclaim USING GI
 CREATE INDEX IF NOT EXISTS idx_farmparcel_geom ON spatial_data_farmparcel USING GIST (geom);
 CREATE INDEX IF NOT EXISTS idx_boundary_geom ON spatial_data_boundary USING GIST (geom);
 CREATE INDEX IF NOT EXISTS idx_dispute_geom ON disputes_dispute USING GIST (geom);
+CREATE INDEX IF NOT EXISTS idx_mine_mine_dispute_geom ON disputes_mine_mine USING GIST (geom);
 CREATE INDEX IF NOT EXISTS idx_hotspot_geom ON disputes_hotspot USING GIST (geom);
 `
 
@@ -204,15 +217,12 @@ async function seedKwekweData() {
       ('MC-KWE-016', 'Ngezi Gold Prospect',    'REG/2023/0940', 'Gold',     ${oid[2]}, 185.00, 'DISPUTED', 'Kwekwe', '2023-07-14', 'J. Mapuranga (SG)', 'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.780,-19.120],[29.810,-19.120],[29.810,-19.145],[29.780,-19.145],[29.780,-19.120]]]}'), 4326)),
 
-      -- Zone I: Mine to Mine Intersects (No farms)
+      -- Zone I: Mine to Mine Intersects — rural bush ~25 km S of Kwekwe (no roads)
       ('MC-KWE-100', 'Alpha Gold Claim',       'REG/2024/0901', 'Gold',     ${oid[0]}, 50.00,  'DISPUTED', 'Kwekwe', '2024-01-01', 'S. Moyo (SG)',      'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.800,-18.700],[29.820,-18.700],[29.820,-18.720],[29.800,-18.720],[29.800,-18.700]]]}'), 4326)),
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.680,-19.160],[29.700,-19.160],[29.700,-19.180],[29.680,-19.180],[29.680,-19.160]]]}'), 4326)),
 
       ('MC-KWE-101', 'Beta Gold Prospect',     'REG/2024/0902', 'Gold',     ${oid[1]}, 50.00,  'DISPUTED', 'Kwekwe', '2024-02-01', 'T. Chigumba (SG)',  'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.810,-18.710],[29.830,-18.710],[29.830,-18.730],[29.810,-18.730],[29.810,-18.710]]]}'), 4326)),
-
-      ('MC-KWE-102', 'Gamma Platinum',         'REG/2024/0903', 'Platinum', ${oid[2]}, 50.00,  'DISPUTED', 'Kwekwe', '2024-03-01', 'J. Mapuranga (SG)', 'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.815,-18.715],[29.835,-18.715],[29.835,-18.735],[29.815,-18.735],[29.815,-18.715]]]}'), 4326))
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.690,-19.170],[29.710,-19.170],[29.710,-19.190],[29.690,-19.190],[29.690,-19.170]]]}'), 4326))
   `)
 
   // ─── Farm Parcels (rural areas surrounding Kwekwe) ─────────────
@@ -361,7 +371,17 @@ async function seedKwekweData() {
     WHERE mc.claim_code = 'MC-KWE-002' AND fp.parcel_code = 'FP-KWE-001'
   `)
 
-  console.log('✅ Kwekwe sample data seeded: 7 owners, 16 mine claims, 10 farm parcels, 9 disputes')
+  // ─── Mine-to-Mine Disputes ─────────────────────────────────────
+  // MC-KWE-100 (Alpha Gold) ↔ MC-KWE-101 (Beta Gold) — overlapping in rural bush
+  await pool.query(`
+    INSERT INTO disputes_mine_mine (mine_claim_a_id, mine_claim_b_id, conflict_area, status, detected_at, geom)
+    SELECT a.id, b.id, 12.50, 'OPEN', '2024-03-15',
+      ST_Intersection(a.geom, b.geom)
+    FROM spatial_data_mineclaim a, spatial_data_mineclaim b
+    WHERE a.claim_code = 'MC-KWE-100' AND b.claim_code = 'MC-KWE-101'
+  `)
+
+  console.log('✅ Kwekwe sample data seeded: 7 owners, 17 mine claims, 13 farm parcels, 9 mine↔farm disputes, 1 mine↔mine dispute')
 }
 
 async function migrate() {
