@@ -3,6 +3,7 @@ const cors = require('cors')
 const dotenv = require('dotenv')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
+const { rateLimit } = require('express-rate-limit')
 const { Pool } = require('pg')
 const { z } = require('zod')
 
@@ -11,8 +12,8 @@ dotenv.config()
 const app = express()
 
 const PORT = Number(process.env.PORT || 3000)
-const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || 'change-me-access-secret'
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'change-me-refresh-secret'
+const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET
 const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || '1d'
 const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d'
 const CORS_ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS || 'http://localhost:5173')
@@ -36,6 +37,22 @@ app.use(cors({
   },
 }))
 app.use(express.json({ limit: '2mb' }))
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: Number(process.env.API_RATE_LIMIT || 1000),
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+})
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: Number(process.env.AUTH_RATE_LIMIT || 25),
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+})
+
+app.use('/api', apiLimiter)
 
 function getPagination(req) {
   const page = Math.max(Number.parseInt(req.query.page || '1', 10), 1)
@@ -137,7 +154,7 @@ app.get('/api/health/', async (_req, res) => {
   }
 })
 
-app.post('/api/users/', async (req, res) => {
+app.post('/api/users/', authLimiter, async (req, res) => {
   const parsed = registerSchema.safeParse(req.body || {})
   if (!parsed.success) return sendError(res, 400, 'Validation error', parsed.error.flatten())
 
@@ -145,7 +162,8 @@ app.post('/api/users/', async (req, res) => {
 
   try {
     const passwordHash = await bcrypt.hash(data.password, 12)
-    const role = data.role === 'ADMIN' ? 'USER' : data.role
+    if (data.role === 'ADMIN') return sendError(res, 403, 'Self-registration as ADMIN is not allowed.')
+    const role = data.role
     const result = await pool.query(
       `INSERT INTO node_users (username, email, password_hash, first_name, last_name, role)
        VALUES ($1, $2, $3, $4, $5, $6)
@@ -159,7 +177,7 @@ app.post('/api/users/', async (req, res) => {
   }
 })
 
-app.post('/api/users/login/', async (req, res) => {
+app.post('/api/users/login/', authLimiter, async (req, res) => {
   const parsed = loginSchema.safeParse(req.body || {})
   if (!parsed.success) return sendError(res, 400, 'Validation error', parsed.error.flatten())
 
@@ -182,7 +200,7 @@ app.post('/api/users/login/', async (req, res) => {
   }
 })
 
-app.post('/api/users/token/refresh/', async (req, res) => {
+app.post('/api/users/token/refresh/', authLimiter, async (req, res) => {
   const refresh = req.body?.refresh
   if (!refresh) return sendError(res, 400, 'Refresh token is required.')
 
@@ -954,6 +972,15 @@ app.use((err, _req, res, _next) => {
 })
 
 async function bootstrap() {
+  if (!ACCESS_TOKEN_SECRET || ACCESS_TOKEN_SECRET.length < 32) {
+    throw new Error('ACCESS_TOKEN_SECRET must be set and at least 32 characters long.')
+  }
+  if (!REFRESH_TOKEN_SECRET || REFRESH_TOKEN_SECRET.length < 32) {
+    throw new Error('REFRESH_TOKEN_SECRET must be set and at least 32 characters long.')
+  }
+  if (ACCESS_TOKEN_SECRET === REFRESH_TOKEN_SECRET) {
+    throw new Error('ACCESS_TOKEN_SECRET and REFRESH_TOKEN_SECRET must be different.')
+  }
   await ensureNodeUsersTable()
   app.listen(PORT, () => {
     console.log(`Node backend running on http://localhost:${PORT}`)
