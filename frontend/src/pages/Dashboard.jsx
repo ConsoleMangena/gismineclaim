@@ -107,44 +107,42 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Administration Panel */}
+        {/* Backend Panel */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
           <div className="p-6 border-b border-slate-100 flex items-center gap-3">
             <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
               <Database size={20} />
             </div>
-            <h2 className="text-xl font-bold text-slate-800">Administration</h2>
+            <h2 className="text-xl font-bold text-slate-800">Backend</h2>
           </div>
           <div className="p-6 flex-1 flex flex-col gap-4 bg-slate-50/50">
             
             <p className="text-sm text-slate-600 mb-2">
-              Access the backend to manage boundaries, upload bulk GIS shapes, and manage user accounts and approvals.
+              Access backend APIs for data management, conflict analysis, and report exports.
             </p>
 
-            {user?.role === 'ADMIN' && (
-              <>
-                <a
-                  href="http://127.0.0.1:8000/admin/spatial_data/mineclaim/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border border-slate-300 text-slate-700 rounded-xl text-sm font-semibold shadow-sm hover:bg-slate-50 hover:text-blue-600 transition-all active:scale-[0.98]"
-                >
-                  <UploadCloud size={18} />
-                  Upload Boundaries
-                </a>
-               
-                <a
-                  href="http://127.0.0.1:8000/admin/users/user/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-sm font-semibold shadow hover:bg-slate-900 transition-all active:scale-[0.98]"
-                >
-                  <Shield size={18} />
-                  Manage User Accounts & Approvals
-                </a>
-              </>
-            )}
+            <a
+              href="/api/health/"
+              target="_blank"
+              rel="noreferrer"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border border-slate-300 text-slate-700 rounded-xl text-sm font-semibold shadow-sm hover:bg-slate-50 hover:text-blue-600 transition-all active:scale-[0.98]"
+            >
+              <UploadCloud size={18} />
+              Check Backend Health
+            </a>
            
+            {user?.role === 'ADMIN' && (
+              <a
+                href="/api/reports/summary/"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-sm font-semibold shadow hover:bg-slate-900 transition-all active:scale-[0.98]"
+              >
+                <Shield size={18} />
+                View Summary API
+              </a>
+            )}
+            
           </div>
         </div>
 

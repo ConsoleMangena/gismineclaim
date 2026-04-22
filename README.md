@@ -4,7 +4,7 @@
 
 This project is a **Spatial Decision Support System (SDSS)** designed to detect and analyze conflicts between **mine claims and agricultural land parcels** using GIS techniques.
 
-The system uses a **Django REST API** backend, **React** frontend, and **PostgreSQL/PostGIS** spatial database to identify overlaps, proximity risks, and dispute hotspots — delivered as a full-stack web application.
+The system uses a **Node.js (Express) REST API** backend, **React** frontend, and **PostgreSQL/PostGIS** spatial database to identify overlaps, proximity risks, and dispute hotspots — delivered as a full-stack web application.
 
 ---
 
@@ -35,7 +35,7 @@ Raw spatial and non-spatial data inputs:
 ### 2. Storage Layer
 
 * **Database:** Supabase (hosted PostgreSQL with **PostGIS** extension)
-* Managed via Django ORM with `django.contrib.gis`
+* Managed via SQL/PostGIS queries in Node.js
 * Frontend also has direct Supabase JS client access
 
 **Core Tables:**
@@ -52,7 +52,7 @@ Raw spatial and non-spatial data inputs:
 
 ### 3. Processing Layer
 
-Handled in the **Django backend** using PostGIS spatial queries and GeoDjango
+Handled in the **Node.js backend** using PostGIS spatial queries
 
 #### Key Spatial Operations:
 
@@ -92,7 +92,7 @@ Handled in the **Django backend** using PostGIS spatial queries and GeoDjango
 
 2. **Data Preparation**
 
-   * Upload via React frontend or Django admin
+   * Upload via React frontend or API
    * Cleaning and validation in backend
 
 3. **Data Storage**
@@ -148,7 +148,7 @@ IDENTIFY clusters
 
 ## 🛠️ Tools & Technologies
 
-* **Backend:** Django, Django REST Framework, GeoDjango
+* **Backend:** Node.js, Express, PostgreSQL (`pg`), JWT
 * **Frontend:** React, Leaflet, Tailwind CSS
 * **Database:** PostgreSQL + PostGIS
 * **API Format:** REST (GeoJSON)
@@ -190,7 +190,7 @@ IDENTIFY clusters
 
 ---
 
-## 🧩 Django Apps
+## 🧩 Backend Modules
 
 | App | Responsibility |
 |---|---|
@@ -228,14 +228,9 @@ IDENTIFY clusters
 ```
 gismineclaim/
 ├── backend/
-│   ├── manage.py
-│   ├── config/             # Settings, URLs, WSGI
-│   ├── users/              # Auth & roles app
-│   ├── spatial_data/       # Core GIS entities app
-│   ├── disputes/           # Disputes & hotspots app
-│   ├── analysis/           # GIS processing services
-│   ├── reports/            # CSV/summary exports
-│   └── requirements.txt
+│   ├── src/server.js       # Express API routes and PostGIS queries
+│   ├── package.json
+│   └── .env.example
 ├── frontend/
 │   ├── src/
 │   │   ├── components/     # Navbar, MapView, StatusBadge
@@ -268,12 +263,9 @@ gismineclaim/
 ```bash
 cd backend
 cp .env.example .env
-# Edit .env — set DB_PASSWORD to your Supabase database password
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
+# Edit .env with DB credentials and JWT secrets
+npm install
+npm run dev
 ```
 
 ### Frontend
@@ -290,4 +282,4 @@ npm run dev
 
 ## 📌 Summary
 
-This system transforms land conflict management into a **spatial analysis problem**, enabling more accurate, faster, and data-driven decision-making using a modern full-stack web application powered by Django, React, and Supabase (PostGIS).
+This system transforms land conflict management into a **spatial analysis problem**, enabling more accurate, faster, and data-driven decision-making using a modern full-stack web application powered by Node.js, React, and Supabase (PostGIS).
