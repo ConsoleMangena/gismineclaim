@@ -50,6 +50,57 @@ function Select({ label, options, ...props }) {
   )
 }
 
+const CRS_PRESETS = [
+  { value: 'WGS84', label: 'WGS 84 (EPSG:4326)' },
+  { value: 'UTM36S', label: 'UTM Zone 36S (EPSG:32736)' },
+  { value: 'Harare_Datum', label: 'Harare Datum' },
+  { value: 'Cape_Datum', label: 'Cape Datum' },
+  { value: 'EPSG:32735', label: 'UTM Zone 35S (EPSG:32735)' },
+  { value: 'EPSG:20936', label: 'Arc 1950 / UTM 36S (EPSG:20936)' },
+  { value: 'EPSG:4210', label: 'Arc 1960 (EPSG:4210)' },
+  { value: 'EPSG:4222', label: 'Cape (EPSG:4222)' },
+]
+
+function CRSSelect({ value, onChange }) {
+  const isCustom = value && !CRS_PRESETS.some((p) => p.value === value)
+  const [showCustom, setShowCustom] = useState(isCustom)
+
+  const handleSelectChange = (e) => {
+    if (e.target.value === '__custom__') {
+      setShowCustom(true)
+      onChange({ target: { value: '' } })
+    } else {
+      setShowCustom(false)
+      onChange(e)
+    }
+  }
+
+  return (
+    <div>
+      <label className="block text-xs font-medium text-slate-400 mb-1">Coordinate System / EPSG</label>
+      <select
+        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white outline-none focus:border-emerald-500 transition-colors"
+        value={showCustom ? '__custom__' : value}
+        onChange={handleSelectChange}
+      >
+        {CRS_PRESETS.map((o) => (
+          <option key={o.value} value={o.value} className="bg-slate-800">{o.label}</option>
+        ))}
+        <option value="__custom__" className="bg-slate-800">Custom EPSG…</option>
+      </select>
+      {showCustom && (
+        <input
+          className="w-full mt-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500 transition-colors"
+          placeholder="e.g. EPSG:32735 or custom CRS name"
+          value={value}
+          onChange={onChange}
+          autoFocus
+        />
+      )}
+    </div>
+  )
+}
+
 function ActionBtn({ onClick, icon: Icon, color = 'text-slate-400 hover:text-white', title }) {
   return (
     <button onClick={onClick} title={title} className={`p-1.5 rounded-lg hover:bg-slate-800 transition-colors ${color}`}>
@@ -208,7 +259,7 @@ function ClaimsTab() {
     <>
       <TableHeader title={`${items.length} Mine Claim(s)`} onAdd={openCreate} />
       <Table
-        cols={['Claim Code', 'Claim Name', 'Reg No', 'Mine Type', 'Owner', 'District', 'Status', 'Area (ha)']}
+        cols={['Claim Code', 'Claim Name', 'Reg No', 'Mine Type', 'Owner', 'District', 'Status', 'Area (ha)', 'CRS']}
         rows={items}
         render={(c) => (
           <tr key={c.id} className="hover:bg-slate-800/50 transition-colors">
@@ -220,6 +271,7 @@ function ClaimsTab() {
             <td className="px-5 py-3 text-sm text-slate-400">{c.district || '—'}</td>
             <td className="px-5 py-3"><Badge status={c.status} /></td>
             <td className="px-5 py-3 text-sm text-slate-300">{c.area || '—'}</td>
+            <td className="px-5 py-3 text-sm text-slate-400">{c.coordinate_system || '—'}</td>
             <td className="px-5 py-3 text-right">
               <div className="flex justify-end gap-1">
                 <ActionBtn icon={Pencil} onClick={() => openEdit(c)} title="Edit" />
@@ -251,10 +303,7 @@ function ClaimsTab() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input label="Area (ha)" type="number" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
-            <Select label="Coordinate System" value={form.coordinate_system} onChange={(e) => setForm({ ...form, coordinate_system: e.target.value })} options={[
-              { value: 'WGS84', label: 'WGS 84 (EPSG:4326)' }, { value: 'UTM36S', label: 'UTM Zone 36S' },
-              { value: 'Harare_Datum', label: 'Harare Datum' }, { value: 'Cape_Datum', label: 'Cape Datum' },
-            ]} />
+            <CRSSelect value={form.coordinate_system} onChange={(e) => setForm({ ...form, coordinate_system: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input label="Survey Date" type="date" value={form.surveyed_date} onChange={(e) => setForm({ ...form, surveyed_date: e.target.value })} />
@@ -339,7 +388,7 @@ function ParcelsTab() {
     <>
       <TableHeader title={`${items.length} Farm Parcel(s)`} onAdd={openCreate} />
       <Table
-        cols={['Parcel Code', 'Farm Name', 'Deed No', 'Lease/Offer', 'Owner', 'Land Use', 'Area (ha)']}
+        cols={['Parcel Code', 'Farm Name', 'Deed No', 'Lease/Offer', 'Owner', 'Land Use', 'Area (ha)', 'CRS']}
         rows={items}
         render={(p) => (
           <tr key={p.id} className="hover:bg-slate-800/50 transition-colors">
@@ -350,6 +399,7 @@ function ParcelsTab() {
             <td className="px-5 py-3 text-sm text-slate-300">{p.owner_name}</td>
             <td className="px-5 py-3 text-sm text-slate-300">{p.land_use || '—'}</td>
             <td className="px-5 py-3 text-sm text-slate-300">{p.area || '—'}</td>
+            <td className="px-5 py-3 text-sm text-slate-400">{p.coordinate_system || '—'}</td>
             <td className="px-5 py-3 text-right">
               <div className="flex justify-end gap-1">
                 <ActionBtn icon={Pencil} onClick={() => openEdit(p)} title="Edit" />
@@ -381,10 +431,7 @@ function ParcelsTab() {
             <Input label="Survey Date" type="date" value={form.survey_date} onChange={(e) => setForm({ ...form, survey_date: e.target.value })} />
             <Input label="Surveyor" value={form.surveyor} onChange={(e) => setForm({ ...form, surveyor: e.target.value })} placeholder="Surveyor name" />
           </div>
-          <Select label="Coordinate System" value={form.coordinate_system} onChange={(e) => setForm({ ...form, coordinate_system: e.target.value })} options={[
-            { value: 'WGS84', label: 'WGS 84 (EPSG:4326)' }, { value: 'UTM36S', label: 'UTM Zone 36S' },
-            { value: 'Harare_Datum', label: 'Harare Datum' }, { value: 'Cape_Datum', label: 'Cape Datum' },
-          ]} />
+          <CRSSelect value={form.coordinate_system} onChange={(e) => setForm({ ...form, coordinate_system: e.target.value })} />
           <GeoFileUpload value={form.geom} onChange={(v) => setForm({ ...form, geom: v })} />
           <SaveBtn saving={saving} onClick={handleSave} />
         </Modal>

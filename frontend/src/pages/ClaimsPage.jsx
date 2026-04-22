@@ -99,6 +99,7 @@ export default function ClaimsPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">District</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Area (ha)</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">CRS</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Surveyor</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Survey Date</th>
                 </tr>
@@ -116,6 +117,7 @@ export default function ClaimsPage() {
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[c.status] || 'bg-slate-700 text-slate-300'}`}>{c.status}</span>
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-300">{c.area || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-400">{c.coordinate_system || '—'}</td>
                     <td className="px-4 py-3 text-sm text-slate-400">{c.surveyor || '—'}</td>
                     <td className="px-4 py-3 text-sm text-slate-400 whitespace-nowrap">{c.surveyed_date ? new Date(c.surveyed_date).toLocaleDateString() : '—'}</td>
                   </tr>
@@ -146,6 +148,7 @@ export default function ClaimsPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Owner</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Land Use</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Area (ha)</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">CRS</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Surveyor</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Survey Date</th>
                 </tr>
@@ -160,6 +163,7 @@ export default function ClaimsPage() {
                     <td className="px-4 py-3 text-sm text-slate-300 whitespace-nowrap">{p.owner_name}</td>
                     <td className="px-4 py-3 text-sm text-slate-300">{p.land_use || '—'}</td>
                     <td className="px-4 py-3 text-sm text-slate-300">{p.area || '—'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-400">{p.coordinate_system || '—'}</td>
                     <td className="px-4 py-3 text-sm text-slate-400">{p.surveyor || '—'}</td>
                     <td className="px-4 py-3 text-sm text-slate-400 whitespace-nowrap">{p.survey_date ? new Date(p.survey_date).toLocaleDateString() : '—'}</td>
                   </tr>

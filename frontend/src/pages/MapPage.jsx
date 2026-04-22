@@ -37,13 +37,16 @@ export default function MapPage() {
         <h1 className="text-base font-semibold text-white">Zimbabwe Conflict Map</h1>
         <div className="flex gap-4 text-xs text-slate-400">
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-red-500 opacity-80" /> Mine Claims
+            <span className="w-3 h-3 rounded-sm bg-yellow-500 opacity-80" /> Mine Claims
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-sm bg-green-500 opacity-80" /> Farm Parcels
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-amber-400 opacity-90" /> Disputes
+            <span className="w-3 h-3 rounded-sm bg-orange-500 opacity-90" /> Mine Disputes
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-red-500 opacity-90" /> Farm Disputes
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-sm bg-indigo-400 opacity-70" /> Provinces

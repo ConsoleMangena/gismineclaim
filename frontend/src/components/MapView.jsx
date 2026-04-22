@@ -5,9 +5,10 @@ import 'leaflet/dist/leaflet.css'
 const INITIAL_CENTER = [-19.0, 29.8]
 const INITIAL_ZOOM = 7
 
-const claimStyle = { color: '#ef4444', weight: 2, fillOpacity: 0.35 }
+const claimStyle = { color: '#eab308', weight: 2, fillOpacity: 0.35 }
 const parcelStyle = { color: '#22c55e', weight: 2, fillOpacity: 0.3 }
-const disputeStyle = { color: '#f59e0b', weight: 3, fillOpacity: 0.55, dashArray: '5,5' }
+const mineDisputeStyle = { color: '#f97316', weight: 3, fillOpacity: 0.50, dashArray: '5,5' }
+const farmDisputeStyle = { color: '#ef4444', weight: 3, fillOpacity: 0.50, dashArray: '6,3' }
 const boundaryStyle = { color: '#818cf8', weight: 1.5, fillOpacity: 0.08, dashArray: '8,4' }
 
 function filterValid(geojson) {
@@ -16,19 +17,53 @@ function filterValid(geojson) {
   return valid.length > 0 ? { ...geojson, features: valid } : null
 }
 
+function disputePopup(prefix, feature, layer) {
+  layer.bindPopup(
+    `<strong>${prefix}</strong><br/>` +
+    `Claim: ${feature.properties.mine_claim_code}<br/>` +
+    `Parcel: ${feature.properties.farm_parcel_code}<br/>` +
+    `Overlap: ${feature.properties.conflict_area ?? '—'} ha<br/>` +
+    `Status: ${feature.properties.status}`
+  )
+}
+
 export default function MapView({ claims, parcels, disputes, boundaries }) {
   const validClaims = filterValid(claims)
   const validParcels = filterValid(parcels)
   const validDisputes = filterValid(disputes)
   const validBoundaries = filterValid(boundaries)
 
+  // Split disputes into mine-side and farm-side layers
+  const mineDisputes = validDisputes
+    ? { ...validDisputes, features: validDisputes.features.filter((f) => f.properties.mine_claim_code) }
+    : null
+  const farmDisputes = validDisputes
+    ? { ...validDisputes, features: validDisputes.features.filter((f) => f.properties.farm_parcel_code) }
+    : null
+  const validMineDisputes = mineDisputes?.features?.length ? mineDisputes : null
+  const validFarmDisputes = farmDisputes?.features?.length ? farmDisputes : null
+
   return (
     <MapContainer center={INITIAL_CENTER} zoom={INITIAL_ZOOM} className="h-full w-full rounded-lg">
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
       <LayersControl position="topright">
+        <LayersControl.BaseLayer checked name="OpenStreetMap">
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+        </LayersControl.BaseLayer>
+        <LayersControl.BaseLayer name="Satellite (Esri)">
+          <TileLayer
+            attribution='&copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          />
+        </LayersControl.BaseLayer>
+        <LayersControl.BaseLayer name="Terrain (OpenTopoMap)">
+          <TileLayer
+            attribution='&copy; <a href="https://opentopomap.org">OpenTopoMap</a> contributors'
+            url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
+          />
+        </LayersControl.BaseLayer>
         {validBoundaries && (
           <LayersControl.Overlay checked name="Province Boundaries">
             <GeoJSON
@@ -52,6 +87,7 @@ export default function MapView({ claims, parcels, disputes, boundaries }) {
                   `<strong>${feature.properties.claim_code}</strong><br/>` +
                   `Owner: ${feature.properties.owner_name}<br/>` +
                   `Area: ${feature.properties.area ?? '—'} ha<br/>` +
+                  `CRS: ${feature.properties.coordinate_system || '—'}<br/>` +
                   `<span style="color:${feature.properties.status === 'ACTIVE' ? '#22c55e' : '#ef4444'}">● ${feature.properties.status}</span>`
                 )
               }}
@@ -69,27 +105,30 @@ export default function MapView({ claims, parcels, disputes, boundaries }) {
                   `<strong>${feature.properties.parcel_code}</strong><br/>` +
                   `Owner: ${feature.properties.owner_name}<br/>` +
                   `Land Use: ${feature.properties.land_use || '—'}<br/>` +
-                  `Area: ${feature.properties.area ?? '—'} ha`
+                  `Area: ${feature.properties.area ?? '—'} ha<br/>` +
+                  `CRS: ${feature.properties.coordinate_system || '—'}`
                 )
               }}
             />
           </LayersControl.Overlay>
         )}
-        {validDisputes && (
-          <LayersControl.Overlay checked name="Disputes">
+        {validMineDisputes && (
+          <LayersControl.Overlay checked name="Mine Disputes">
             <GeoJSON
-              key={'d-' + validDisputes.features.length}
-              data={validDisputes}
-              style={disputeStyle}
-              onEachFeature={(feature, layer) => {
-                layer.bindPopup(
-                  `<strong>Dispute</strong><br/>` +
-                  `Claim: ${feature.properties.mine_claim_code}<br/>` +
-                  `Parcel: ${feature.properties.farm_parcel_code}<br/>` +
-                  `Overlap: ${feature.properties.conflict_area ?? '—'} ha<br/>` +
-                  `Status: ${feature.properties.status}`
-                )
-              }}
+              key={'md-' + validMineDisputes.features.length}
+              data={validMineDisputes}
+              style={mineDisputeStyle}
+              onEachFeature={(feature, layer) => disputePopup('Mine Dispute', feature, layer)}
+            />
+          </LayersControl.Overlay>
+        )}
+        {validFarmDisputes && (
+          <LayersControl.Overlay checked name="Farm Disputes">
+            <GeoJSON
+              key={'fd-' + validFarmDisputes.features.length}
+              data={validFarmDisputes}
+              style={farmDisputeStyle}
+              onEachFeature={(feature, layer) => disputePopup('Farm Dispute', feature, layer)}
             />
           </LayersControl.Overlay>
         )}
