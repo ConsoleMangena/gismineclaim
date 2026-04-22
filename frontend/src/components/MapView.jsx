@@ -1,9 +1,9 @@
 import { MapContainer, TileLayer, GeoJSON, LayersControl } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 
-// Zimbabwe centre: approx -19.0, 29.8
-const INITIAL_CENTER = [-19.0, 29.8]
-const INITIAL_ZOOM = 7
+// Kwekwe district centre — zoomed out to show outskirt mining/farm areas
+const INITIAL_CENTER = [-18.93, 29.78]
+const INITIAL_ZOOM = 10
 
 const claimStyle = { color: '#eab308', weight: 2, fillOpacity: 0.35 }
 const parcelStyle = { color: '#22c55e', weight: 2, fillOpacity: 0.3 }

@@ -164,7 +164,7 @@ async function seedKwekweData() {
 
       -- Zone C: Northeast (Chrome belt toward Kadoma, ~20 km NE)
       ('MC-KWE-003', 'Indarama Chrome',        'REG/2024/0078', 'Chrome',   ${oid[6]}, 210.00, 'DISPUTED', 'Kwekwe', '2024-01-10', 'R. Nkomo (SG)',     'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.880,-18.810],[29.905,-18.810],[29.905,-18.830],[29.880,-18.830],[29.880,-18.810]]]}'), 4326)),
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.880,-18.810],[29.905,-18.810],[29.905,-18.820],[29.880,-18.820],[29.880,-18.810]]]}'), 4326)),
 
       ('MC-KWE-005', 'Zim Alloys Block A',     'REG/2024/0112', 'Chrome',   ${oid[6]}, 340.00, 'DISPUTED', 'Kwekwe', '2024-04-18', 'S. Moyo (SG)',      'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.870,-18.825],[29.900,-18.825],[29.900,-18.852],[29.870,-18.852],[29.870,-18.825]]]}'), 4326)),
@@ -202,7 +202,17 @@ async function seedKwekweData() {
 
       -- Zone H: Far South (Ngezi, ~25 km S) — mine surveyed 10 yrs after farm
       ('MC-KWE-016', 'Ngezi Gold Prospect',    'REG/2023/0940', 'Gold',     ${oid[2]}, 185.00, 'DISPUTED', 'Kwekwe', '2023-07-14', 'J. Mapuranga (SG)', 'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.780,-19.120],[29.810,-19.120],[29.810,-19.145],[29.780,-19.145],[29.780,-19.120]]]}'), 4326))
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.780,-19.120],[29.810,-19.120],[29.810,-19.145],[29.780,-19.145],[29.780,-19.120]]]}'), 4326)),
+
+      -- Zone I: Mine to Mine Intersects (No farms)
+      ('MC-KWE-100', 'Alpha Gold Claim',       'REG/2024/0901', 'Gold',     ${oid[0]}, 50.00,  'DISPUTED', 'Kwekwe', '2024-01-01', 'S. Moyo (SG)',      'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.800,-18.700],[29.820,-18.700],[29.820,-18.720],[29.800,-18.720],[29.800,-18.700]]]}'), 4326)),
+
+      ('MC-KWE-101', 'Beta Gold Prospect',     'REG/2024/0902', 'Gold',     ${oid[1]}, 50.00,  'DISPUTED', 'Kwekwe', '2024-02-01', 'T. Chigumba (SG)',  'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.810,-18.710],[29.830,-18.710],[29.830,-18.730],[29.810,-18.730],[29.810,-18.710]]]}'), 4326)),
+
+      ('MC-KWE-102', 'Gamma Platinum',         'REG/2024/0903', 'Platinum', ${oid[2]}, 50.00,  'DISPUTED', 'Kwekwe', '2024-03-01', 'J. Mapuranga (SG)', 'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.815,-18.715],[29.835,-18.715],[29.835,-18.735],[29.815,-18.735],[29.815,-18.715]]]}'), 4326))
   `)
 
   // ─── Farm Parcels (rural areas surrounding Kwekwe) ─────────────
@@ -247,7 +257,17 @@ async function seedKwekweData() {
 
       -- Zone C: NE — large farm overlapping MC-KWE-003 (Indarama) and MC-KWE-005 (Zim Alloys)
       ('FP-KWE-010', 'Kwekwe North Farm', 'DEED/2015/KWE/031', 'Title Deed',   ${oid[2]}, 'Mixed farming',  950.00, '2015-03-10', 'P. Banda (SG)',     'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.870,-18.800],[29.950,-18.800],[29.950,-18.850],[29.870,-18.850],[29.870,-18.800]]]}'), 4326))
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.870,-18.800],[29.950,-18.800],[29.950,-18.850],[29.870,-18.850],[29.870,-18.800]]]}'), 4326)),
+
+      -- Zone J: Standalone Farms (No overlapping mines)
+      ('FP-KWE-100', 'Gothic Farmlands',  'DEED/2012/KWE/101', 'Title Deed',   ${oid[3]}, 'Mixed farming',  500.00, '2012-05-10', 'P. Banda (SG)',     'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.600,-18.700],[29.650,-18.700],[29.650,-18.750],[29.600,-18.750],[29.600,-18.700]]]}'), 4326)),
+
+      ('FP-KWE-101', 'Serengeti Acres',   'OL/2018/KWE/102',   'Offer Letter', ${oid[4]}, 'Cattle ranching',700.00, '2018-09-12', 'S. Moyo (SG)',      'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.900,-18.700],[29.950,-18.700],[29.950,-18.750],[29.900,-18.750],[29.900,-18.700]]]}'), 4326)),
+
+      ('FP-KWE-102', 'Oasis Greens',      'DEED/2020/KWE/103', 'Title Deed',   ${oid[5]}, 'Crop farming',   400.00, '2020-11-20', 'R. Nkomo (SG)',     'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.500,-18.600],[29.550,-18.600],[29.550,-18.650],[29.500,-18.650],[29.500,-18.600]]]}'), 4326))
   `)
 
   // ─── Disputes — genuinely overlapping mine↔farm geometries ─────
