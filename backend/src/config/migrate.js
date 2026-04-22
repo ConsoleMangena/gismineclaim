@@ -139,62 +139,64 @@ async function seedKwekweData() {
       ('Chenai Gumbo',      '29-890123H45', '+263 778 901 234', 'chenai.g@goldmine.co.zw',   '3 Globe & Phoenix Rd, Kwekwe')
     RETURNING id
   `)
-  const oid = owners.rows.map(r => r.id)
+  const oid = owners.rows.map(r => Number(r.id))
 
   // ─── Mine Claims (Kwekwe is a major gold & chrome belt) ────────
   // Coordinates centred around Kwekwe: lat ~-18.93, lng ~29.82
+  // Owner IDs are interpolated directly because the node-pg driver cannot
+  // resolve parameterised types in multi-row VALUES with PostGIS functions.
   await pool.query(`
     INSERT INTO spatial_data_mineclaim
       (claim_code, claim_name, claim_reg_no, mine_type, owner_id, area, status, district, surveyed_date, surveyor, coordinate_system, geom)
     VALUES
-      ('MC-KWE-001', 'Globe & Phoenix Gold',   'REG/2023/0451', 'Gold',     $1, 125.50, 'ACTIVE',   'Kwekwe', '2023-06-15', 'J. Mapuranga (SG)',  'WGS84',
+      ('MC-KWE-001', 'Globe & Phoenix Gold',   'REG/2023/0451', 'Gold',     ${oid[0]}, 125.50, 'ACTIVE',   'Kwekwe', '2023-06-15', 'J. Mapuranga (SG)',  'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.810,-18.920],[29.820,-18.920],[29.820,-18.930],[29.810,-18.930],[29.810,-18.920]]]}'), 4326)),
 
-      ('MC-KWE-002', 'Doris Gold Claim',       'REG/2023/0452', 'Gold',     $2, 87.30,  'ACTIVE',   'Kwekwe', '2023-08-22', 'T. Chigumba (SG)',  'WGS84',
+      ('MC-KWE-002', 'Doris Gold Claim',       'REG/2023/0452', 'Gold',     ${oid[1]}, 87.30,  'ACTIVE',   'Kwekwe', '2023-08-22', 'T. Chigumba (SG)',  'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.825,-18.935],[29.838,-18.935],[29.838,-18.945],[29.825,-18.945],[29.825,-18.935]]]}'), 4326)),
 
-      ('MC-KWE-003', 'Indarama Chrome',        'REG/2024/0078', 'Chrome',   $3, 210.00, 'ACTIVE',   'Kwekwe', '2024-01-10', 'R. Nkomo (SG)',     'WGS84',
+      ('MC-KWE-003', 'Indarama Chrome',        'REG/2024/0078', 'Chrome',   ${oid[2]}, 210.00, 'ACTIVE',   'Kwekwe', '2024-01-10', 'R. Nkomo (SG)',     'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.790,-18.905],[29.808,-18.905],[29.808,-18.918],[29.790,-18.918],[29.790,-18.905]]]}'), 4326)),
 
-      ('MC-KWE-004', 'Sebakwe Gold',           'REG/2022/0310', 'Gold',     $4, 56.80,  'EXPIRED',  'Kwekwe', '2022-03-05', 'J. Mapuranga (SG)',  'WGS84',
+      ('MC-KWE-004', 'Sebakwe Gold',           'REG/2022/0310', 'Gold',     ${oid[3]}, 56.80,  'EXPIRED',  'Kwekwe', '2022-03-05', 'J. Mapuranga (SG)',  'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.845,-18.950],[29.855,-18.950],[29.855,-18.958],[29.845,-18.958],[29.845,-18.950]]]}'), 4326)),
 
-      ('MC-KWE-005', 'Zim Alloys Block A',     'REG/2024/0112', 'Chrome',   $8, 340.00, 'ACTIVE',   'Kwekwe', '2024-04-18', 'S. Moyo (SG)',      'WGS84',
+      ('MC-KWE-005', 'Zim Alloys Block A',     'REG/2024/0112', 'Chrome',   ${oid[7]}, 340.00, 'ACTIVE',   'Kwekwe', '2024-04-18', 'S. Moyo (SG)',      'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.770,-18.910],[29.795,-18.910],[29.795,-18.928],[29.770,-18.928],[29.770,-18.910]]]}'), 4326)),
 
-      ('MC-KWE-006', 'Munyati Gold Reef',      'REG/2023/0599', 'Gold',     $6, 98.20,  'DISPUTED', 'Kwekwe', '2023-11-02', 'T. Chigumba (SG)',  'WGS84',
+      ('MC-KWE-006', 'Munyati Gold Reef',      'REG/2023/0599', 'Gold',     ${oid[5]}, 98.20,  'DISPUTED', 'Kwekwe', '2023-11-02', 'T. Chigumba (SG)',  'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.835,-18.915],[29.848,-18.915],[29.848,-18.928],[29.835,-18.928],[29.835,-18.915]]]}'), 4326)),
 
-      ('MC-KWE-007', 'Patchway Nickel',        'REG/2024/0203', 'Nickel',   $7, 175.00, 'ACTIVE',   'Kwekwe', '2024-02-28', 'R. Nkomo (SG)',     'WGS84',
+      ('MC-KWE-007', 'Patchway Nickel',        'REG/2024/0203', 'Nickel',   ${oid[6]}, 175.00, 'ACTIVE',   'Kwekwe', '2024-02-28', 'R. Nkomo (SG)',     'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.800,-18.940],[29.818,-18.940],[29.818,-18.955],[29.800,-18.955],[29.800,-18.940]]]}'), 4326)),
 
-      ('MC-KWE-008', 'Ripple Creek Gold',      'REG/2024/0301', 'Gold',     $1, 63.40,  'ACTIVE',   'Kwekwe', '2024-06-10', 'S. Moyo (SG)',      'WGS84',
+      ('MC-KWE-008', 'Ripple Creek Gold',      'REG/2024/0301', 'Gold',     ${oid[0]}, 63.40,  'ACTIVE',   'Kwekwe', '2024-06-10', 'S. Moyo (SG)',      'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.815,-18.960],[29.828,-18.960],[29.828,-18.970],[29.815,-18.970],[29.815,-18.960]]]}'), 4326))
-  `, [oid[0], oid[1], oid[2], oid[3], oid[7], oid[5], oid[6], oid[0]])
+  `)
 
   // ─── Farm Parcels (around Kwekwe farming areas) ────────────────
   await pool.query(`
     INSERT INTO spatial_data_farmparcel
       (parcel_code, farm_name, deed_no, lease_type, owner_id, land_use, area, survey_date, surveyor, coordinate_system, geom)
     VALUES
-      ('FP-KWE-001', 'Doongwai Farm',     'DEED/2020/KWE/001', 'Title Deed',   $4, 'Mixed farming',    450.00, '2020-05-12', 'P. Banda (SG)',     'WGS84',
+      ('FP-KWE-001', 'Doongwai Farm',     'DEED/2020/KWE/001', 'Title Deed',   ${oid[3]}, 'Mixed farming',    450.00, '2020-05-12', 'P. Banda (SG)',     'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.820,-18.925],[29.840,-18.925],[29.840,-18.940],[29.820,-18.940],[29.820,-18.925]]]}'), 4326)),
 
-      ('FP-KWE-002', 'Sherwood Farm',     'DEED/2019/KWE/045', 'Title Deed',   $5, 'Cattle ranching',  820.00, '2019-09-30', 'J. Mapuranga (SG)', 'WGS84',
+      ('FP-KWE-002', 'Sherwood Farm',     'DEED/2019/KWE/045', 'Title Deed',   ${oid[4]}, 'Cattle ranching',  820.00, '2019-09-30', 'J. Mapuranga (SG)', 'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.790,-18.945],[29.815,-18.945],[29.815,-18.965],[29.790,-18.965],[29.790,-18.945]]]}'), 4326)),
 
-      ('FP-KWE-003', 'Sebakwe Ranch',     'OL/2021/KWE/012',   'Offer Letter', $5, 'Cattle ranching',  600.00, '2021-02-18', 'T. Chigumba (SG)', 'WGS84',
+      ('FP-KWE-003', 'Sebakwe Ranch',     'OL/2021/KWE/012',   'Offer Letter', ${oid[4]}, 'Cattle ranching',  600.00, '2021-02-18', 'T. Chigumba (SG)', 'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.840,-18.948],[29.860,-18.948],[29.860,-18.962],[29.840,-18.962],[29.840,-18.948]]]}'), 4326)),
 
-      ('FP-KWE-004', 'Mbizo Crop Plot',   'LEASE/2022/KWE/003','Lease',        $3, 'Crop farming',     35.00,  '2022-07-01', 'R. Nkomo (SG)',     'WGS84',
+      ('FP-KWE-004', 'Mbizo Crop Plot',   'LEASE/2022/KWE/003','Lease',        ${oid[2]}, 'Crop farming',     35.00,  '2022-07-01', 'R. Nkomo (SG)',     'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.828,-18.932],[29.836,-18.932],[29.836,-18.938],[29.828,-18.938],[29.828,-18.932]]]}'), 4326)),
 
-      ('FP-KWE-005', 'Patchway Estate',   'DEED/2018/KWE/078', 'Title Deed',   $7, 'Tobacco & maize',  520.00, '2018-11-15', 'P. Banda (SG)',     'WGS84',
+      ('FP-KWE-005', 'Patchway Estate',   'DEED/2018/KWE/078', 'Title Deed',   ${oid[6]}, 'Tobacco & maize',  520.00, '2018-11-15', 'P. Banda (SG)',     'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.798,-18.935],[29.820,-18.935],[29.820,-18.950],[29.798,-18.950],[29.798,-18.935]]]}'), 4326)),
 
-      ('FP-KWE-006', 'Munyati Irrigation','OL/2023/KWE/021',   'Offer Letter', $6, 'Irrigated crops',  280.00, '2023-03-20', 'S. Moyo (SG)',      'WGS84',
+      ('FP-KWE-006', 'Munyati Irrigation','OL/2023/KWE/021',   'Offer Letter', ${oid[5]}, 'Irrigated crops',  280.00, '2023-03-20', 'S. Moyo (SG)',      'WGS84',
         ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.830,-18.910],[29.850,-18.910],[29.850,-18.925],[29.830,-18.925],[29.830,-18.910]]]}'), 4326))
-  `, [oid[3], oid[4], oid[4], oid[2], oid[6], oid[5]])
+  `)
 
   // ─── Disputes (overlapping claim & farm) ───────────────────────
   // MC-KWE-006 (Munyati Gold Reef) overlaps FP-KWE-006 (Munyati Irrigation)
