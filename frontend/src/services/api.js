@@ -75,6 +75,13 @@ export const disputesApi = {
   delete: (id) => api.delete(`/disputes/${id}/`),
 }
 
+export const mineDisputesApi = {
+  list: (params) => api.get('/mine-disputes/', { params }),
+  get: (id) => api.get(`/mine-disputes/${id}/`),
+  update: (id, data) => api.put(`/mine-disputes/${id}/`, data),
+  delete: (id) => api.delete(`/mine-disputes/${id}/`),
+}
+
 export const hotspotsApi = {
   list: (params) => api.get('/hotspots/', { params }),
 }

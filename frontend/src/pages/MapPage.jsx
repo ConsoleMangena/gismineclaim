@@ -1,26 +1,29 @@
 import { useState, useEffect } from 'react'
 import MapView from '../components/MapView'
-import { claimsApi, parcelsApi, disputesApi, boundariesApi } from '../services/api'
+import { claimsApi, parcelsApi, disputesApi, mineDisputesApi, boundariesApi } from '../services/api'
 
 export default function MapPage() {
   const [claims, setClaims] = useState(null)
   const [parcels, setParcels] = useState(null)
   const [disputes, setDisputes] = useState(null)
+  const [mineDisputes, setMineDisputes] = useState(null)
   const [boundaries, setBoundaries] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [claimsRes, parcelsRes, disputesRes, boundariesRes] = await Promise.all([
+        const [claimsRes, parcelsRes, disputesRes, mineDisputesRes, boundariesRes] = await Promise.all([
           claimsApi.list({ page_size: 1000 }),
           parcelsApi.list({ page_size: 1000 }),
           disputesApi.list({ page_size: 1000 }),
+          mineDisputesApi.list({ page_size: 1000 }),
           boundariesApi.list({ page_size: 100 }),
         ])
         setClaims(claimsRes.data.results || claimsRes.data)
         setParcels(parcelsRes.data.results || parcelsRes.data)
         setDisputes(disputesRes.data.results || disputesRes.data)
+        setMineDisputes(mineDisputesRes.data.results || mineDisputesRes.data)
         setBoundaries(boundariesRes.data.results || boundariesRes.data)
       } catch {
         // API not available
@@ -43,10 +46,10 @@ export default function MapPage() {
             <span className="w-3 h-3 rounded-sm bg-green-500 opacity-80" /> Farm Parcels
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-orange-500 opacity-90" /> Mine Disputes
+            <span className="w-3 h-3 rounded-sm bg-red-600 opacity-90" /> Mine↔Mine Disputes
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-red-500 opacity-90" /> Farm Disputes
+            <span className="w-3 h-3 rounded-sm bg-orange-500 opacity-90" /> Mine↔Farm Disputes
           </span>
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-sm bg-indigo-400 opacity-70" /> Provinces
@@ -60,7 +63,7 @@ export default function MapPage() {
             Loading Zimbabwe map data...
           </div>
         ) : (
-          <MapView claims={claims} parcels={parcels} disputes={disputes} boundaries={boundaries} />
+          <MapView claims={claims} parcels={parcels} disputes={disputes} mineDisputes={mineDisputes} boundaries={boundaries} />
         )}
       </div>
     </div>

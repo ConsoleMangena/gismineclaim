@@ -7,8 +7,8 @@ const INITIAL_ZOOM = 10
 
 const claimStyle = { color: '#eab308', weight: 2, fillOpacity: 0.35 }
 const parcelStyle = { color: '#22c55e', weight: 2, fillOpacity: 0.3 }
-const mineDisputeStyle = { color: '#f97316', weight: 3, fillOpacity: 0.50, dashArray: '5,5' }
-const farmDisputeStyle = { color: '#ef4444', weight: 3, fillOpacity: 0.50, dashArray: '6,3' }
+const mineFarmDisputeStyle = { color: '#f97316', weight: 3, fillOpacity: 0.50, dashArray: '5,5' }
+const mineMineDisputeStyle = { color: '#dc2626', weight: 3, fillOpacity: 0.55, dashArray: '4,4' }
 const boundaryStyle = { color: '#818cf8', weight: 1.5, fillOpacity: 0.08, dashArray: '8,4' }
 
 function filterValid(geojson) {
@@ -17,9 +17,9 @@ function filterValid(geojson) {
   return valid.length > 0 ? { ...geojson, features: valid } : null
 }
 
-function disputePopup(prefix, feature, layer) {
+function mineFarmPopup(feature, layer) {
   layer.bindPopup(
-    `<strong>${prefix}</strong><br/>` +
+    `<strong>Mine ↔ Farm Dispute</strong><br/>` +
     `Claim: ${feature.properties.mine_claim_code}<br/>` +
     `Parcel: ${feature.properties.farm_parcel_code}<br/>` +
     `Overlap: ${feature.properties.conflict_area ?? '—'} ha<br/>` +
@@ -27,21 +27,22 @@ function disputePopup(prefix, feature, layer) {
   )
 }
 
-export default function MapView({ claims, parcels, disputes, boundaries }) {
+function mineMinePopup(feature, layer) {
+  layer.bindPopup(
+    `<strong style="color:#dc2626">Mine ↔ Mine Dispute</strong><br/>` +
+    `Claim A: ${feature.properties.mine_claim_a_code}<br/>` +
+    `Claim B: ${feature.properties.mine_claim_b_code}<br/>` +
+    `Overlap: ${feature.properties.conflict_area ?? '—'} ha<br/>` +
+    `Status: ${feature.properties.status}`
+  )
+}
+
+export default function MapView({ claims, parcels, disputes, mineDisputes, boundaries }) {
   const validClaims = filterValid(claims)
   const validParcels = filterValid(parcels)
   const validDisputes = filterValid(disputes)
+  const validMineDisputes = filterValid(mineDisputes)
   const validBoundaries = filterValid(boundaries)
-
-  // Split disputes into mine-side and farm-side layers
-  const mineDisputes = validDisputes
-    ? { ...validDisputes, features: validDisputes.features.filter((f) => f.properties.mine_claim_code) }
-    : null
-  const farmDisputes = validDisputes
-    ? { ...validDisputes, features: validDisputes.features.filter((f) => f.properties.farm_parcel_code) }
-    : null
-  const validMineDisputes = mineDisputes?.features?.length ? mineDisputes : null
-  const validFarmDisputes = farmDisputes?.features?.length ? farmDisputes : null
 
   return (
     <MapContainer center={INITIAL_CENTER} zoom={INITIAL_ZOOM} className="h-full w-full rounded-lg">
@@ -113,22 +114,22 @@ export default function MapView({ claims, parcels, disputes, boundaries }) {
           </LayersControl.Overlay>
         )}
         {validMineDisputes && (
-          <LayersControl.Overlay checked name="Mine Disputes">
+          <LayersControl.Overlay checked name="Mine ↔ Mine Disputes">
             <GeoJSON
-              key={'md-' + validMineDisputes.features.length}
+              key={'mmd-' + validMineDisputes.features.length}
               data={validMineDisputes}
-              style={mineDisputeStyle}
-              onEachFeature={(feature, layer) => disputePopup('Mine Dispute', feature, layer)}
+              style={mineMineDisputeStyle}
+              onEachFeature={mineMinePopup}
             />
           </LayersControl.Overlay>
         )}
-        {validFarmDisputes && (
-          <LayersControl.Overlay checked name="Farm Disputes">
+        {validDisputes && (
+          <LayersControl.Overlay checked name="Mine ↔ Farm Disputes">
             <GeoJSON
-              key={'fd-' + validFarmDisputes.features.length}
-              data={validFarmDisputes}
-              style={farmDisputeStyle}
-              onEachFeature={(feature, layer) => disputePopup('Farm Dispute', feature, layer)}
+              key={'mfd-' + validDisputes.features.length}
+              data={validDisputes}
+              style={mineFarmDisputeStyle}
+              onEachFeature={mineFarmPopup}
             />
           </LayersControl.Overlay>
         )}
