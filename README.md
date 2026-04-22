@@ -34,13 +34,12 @@ Raw spatial and non-spatial data inputs:
 
 ### 2. Storage Layer
 
-* **Database:** Supabase (hosted PostgreSQL with **PostGIS** extension)
-* Managed via SQL/PostGIS queries in Node.js
-* Frontend also has direct Supabase JS client access
+* **Database:** PostgreSQL with **PostGIS** extension
+* Managed via SQL/PostGIS queries in Node.js (`pg` driver)
 
 **Core Tables:**
 
-* `users_user` — id, username, email, password, role (ADMIN/SURVEYOR/OFFICER)
+* `node_users` — id, username, email, password_hash, role (ADMIN/USER)
 * `spatial_data_owner` — id, name, national_id, contact_info
 * `spatial_data_mineclaim` — id, claim_code, owner_id (FK), area, status, geom (POLYGON)
 * `spatial_data_farmparcel` — id, parcel_code, owner_id (FK), land_use, area, geom (POLYGON)
@@ -181,7 +180,6 @@ IDENTIFY clusters
 
 ## 🚀 Future Improvements
 
-* Role-based access control and user authentication
 * Real-time GPS data ingestion
 * Mobile-responsive map interface
 * Advanced hotspot analysis (Getis-Ord Gi*)
@@ -190,15 +188,25 @@ IDENTIFY clusters
 
 ---
 
-## 🧩 Backend Modules
+## 🧩 Backend Structure
 
-| App | Responsibility |
-|---|---|
-| `users` | Authentication & roles (Admin, Surveyor, Officer) |
-| `spatial_data` | Core GIS entities: Owner, MineClaim, FarmParcel, Boundary |
-| `disputes` | Conflict records, overlap tracking, hotspots |
-| `analysis` | GIS engine — intersection, buffer, hotspot services |
-| `reports` | CSV exports, summary statistics |
+The backend is organized into modular layers under `src/`:
+
+| Layer | Files | Responsibility |
+|---|---|---|
+| **Config** | `config/db.js` | PostgreSQL pool, table setup |
+| **Middleware** | `middleware/auth.js`, `middleware/rateLimiter.js` | JWT auth, token helpers, rate limiting |
+| **Helpers** | `helpers/utils.js` | Pagination, GeoJSON builders, CSV, error responses |
+| **Routes** | `routes/users.js` | Registration, login, token refresh, profile |
+| | `routes/owners.js` | Owner CRUD |
+| | `routes/mineClaims.js` | Mine claim CRUD (GeoJSON) |
+| | `routes/farmParcels.js` | Farm parcel CRUD (GeoJSON) |
+| | `routes/boundaries.js` | Boundary listing (GeoJSON) |
+| | `routes/disputes.js` | Dispute listing (GeoJSON) |
+| | `routes/hotspots.js` | Hotspot listing (GeoJSON) |
+| | `routes/analysis.js` | Conflict detection, buffer risks, hotspot analysis |
+| | `routes/reports.js` | Summary stats, CSV exports |
+| **Entry** | `server.js` | Express app setup, CORS, route mounting, bootstrap |
 
 ---
 
@@ -228,15 +236,36 @@ IDENTIFY clusters
 ```
 gismineclaim/
 ├── backend/
-│   ├── src/server.js       # Express API routes and PostGIS queries
+│   ├── src/
+│   │   ├── server.js           # Entry point — Express app setup & bootstrap
+│   │   ├── config/
+│   │   │   └── db.js           # PostgreSQL pool & table setup
+│   │   ├── middleware/
+│   │   │   ├── auth.js         # JWT auth middleware & token helpers
+│   │   │   └── rateLimiter.js  # Rate limiters
+│   │   ├── helpers/
+│   │   │   └── utils.js        # Shared utilities (pagination, GeoJSON, CSV)
+│   │   └── routes/
+│   │       ├── users.js        # Registration, login, token refresh, profile
+│   │       ├── owners.js       # Owner CRUD
+│   │       ├── mineClaims.js   # Mine claim CRUD (GeoJSON)
+│   │       ├── farmParcels.js  # Farm parcel CRUD (GeoJSON)
+│   │       ├── boundaries.js   # Boundary listing (GeoJSON)
+│   │       ├── disputes.js     # Dispute listing (GeoJSON)
+│   │       ├── hotspots.js     # Hotspot listing (GeoJSON)
+│   │       ├── analysis.js     # Conflict detection, buffer, hotspot analysis
+│   │       └── reports.js      # Summary stats, CSV exports
 │   ├── package.json
 │   └── .env.example
 ├── frontend/
 │   ├── src/
-│   │   ├── components/     # Navbar, MapView, StatusBadge
-│   │   ├── pages/          # Dashboard, MapPage, ClaimsPage, DisputesPage
-│   │   ├── services/       # API service layer
-│   │   └── App.jsx
+│   │   ├── components/     # Navbar, MapView, ProtectedRoute, StatusBadge
+│   │   ├── context/        # AuthContext (JWT auth state)
+│   │   ├── pages/          # Dashboard, MapPage, ClaimsPage, DisputesPage, LoginPage, RegisterPage
+│   │   ├── services/       # API service layer (Axios + interceptors)
+│   │   ├── main.jsx        # App entry point
+│   │   ├── index.css       # Tailwind imports & global styles
+│   │   └── App.jsx         # Router & layout
 │   ├── package.json
 │   └── tailwind.config.js
 └── README.md
@@ -248,15 +277,14 @@ gismineclaim/
 
 ### Prerequisites
 
-* Python 3.10+
 * Node.js 18+
-* Supabase account (provides hosted PostgreSQL + PostGIS)
+* PostgreSQL 14+ with PostGIS extension enabled
 
-### Database (Supabase)
+### Database
 
-1. Create a project at [supabase.com](https://supabase.com)
-2. Enable PostGIS extension: **Database → Extensions → search "postgis" → Enable**
-3. Copy your database password from project settings
+1. Install PostgreSQL and enable the PostGIS extension
+2. Create a database for the project
+3. The backend will create the `node_users` table automatically on startup; other spatial tables should be created via SQL migrations
 
 ### Backend
 
@@ -272,14 +300,14 @@ npm run dev
 
 ```bash
 cd frontend
-cp .env.example .env
-# .env already contains VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY
 npm install
 npm run dev
 ```
+
+The Vite dev server proxies `/api` requests to the backend at `http://localhost:3000`.
 
 ---
 
 ## 📌 Summary
 
-This system transforms land conflict management into a **spatial analysis problem**, enabling more accurate, faster, and data-driven decision-making using a modern full-stack web application powered by Node.js, React, and Supabase (PostGIS).
+This system transforms land conflict management into a **spatial analysis problem**, enabling more accurate, faster, and data-driven decision-making using a modern full-stack web application powered by Node.js, React, and PostgreSQL/PostGIS.

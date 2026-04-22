@@ -1,152 +1,198 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Map, Layers, AlertTriangle, Shield, UploadCloud, FileText, Database } from 'lucide-react'
-import { claimsApi, parcelsApi, disputesApi } from '../services/api'
+import {
+  Map, Layers, AlertTriangle, Shield, Flame, CheckCircle, Crosshair,
+  Download, FileText, TreePine, ArrowRight,
+} from 'lucide-react'
+import api, { reportsApi, disputesApi } from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../components/Toast'
 
 export default function Dashboard() {
   const { user } = useAuth()
-  const [stats, setStats] = useState({
-    claims: 0,
-    parcels: 0,
-    disputes: 0,
-  })
+  const [stats, setStats] = useState(null)
+  const [recentDisputes, setRecentDisputes] = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        const [claimsRes, parcelsRes, disputesRes] = await Promise.all([
-          claimsApi.list({ page: 1 }),
-          parcelsApi.list({ page: 1 }),
-          disputesApi.list({ page: 1 }),
-        ])
-        setStats({
-          claims: claimsRes.data.count || 0,
-          parcels: parcelsRes.data.count || 0,
-          disputes: disputesRes.data.count || 0,
-        })
-      } catch {
-        // API not available yet — show zeros
-      } finally {
-        setLoading(false)
-      }
+  const fetchData = useCallback(async () => {
+    try {
+      const [summaryRes, disputesRes] = await Promise.all([
+        reportsApi.summary(),
+        disputesApi.list({ page: 1, page_size: 5 }),
+      ])
+      setStats(summaryRes.data)
+      setRecentDisputes(
+        (disputesRes.data?.results?.features || []).map((f) => ({
+          id: f.id,
+          ...f.properties,
+        }))
+      )
+    } catch {
+      setStats({
+        total_mine_claims: 0,
+        total_farm_parcels: 0,
+        total_disputes: 0,
+        open_disputes: 0,
+        resolved_disputes: 0,
+        total_hotspots: 0,
+      })
+    } finally {
+      setLoading(false)
     }
-    fetchStats()
   }, [])
 
-  const cards = [
-    { label: 'Mine Claims', value: stats.claims, icon: Layers, color: 'text-red-500', bg: 'bg-red-50', to: '/claims' },
-    { label: 'Farm Parcels', value: stats.parcels, icon: Shield, color: 'text-green-500', bg: 'bg-green-50', to: '/claims' },
-    { label: 'Active Disputes', value: stats.disputes, icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50', to: '/disputes' },
-    { label: 'View Map', value: '→', icon: Map, color: 'text-blue-500', bg: 'bg-blue-50', to: '/map' },
-  ]
+  useEffect(() => { fetchData() }, [fetchData])
+
+  const tiles = stats
+    ? [
+        { label: 'Mine Claims', value: stats.total_mine_claims, icon: Layers, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20', to: '/claims' },
+        { label: 'Farm Parcels', value: stats.total_farm_parcels, icon: TreePine, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', to: '/claims' },
+        { label: 'Total Disputes', value: stats.total_disputes, icon: AlertTriangle, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', to: '/disputes' },
+        { label: 'Open Disputes', value: stats.open_disputes, icon: Crosshair, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', to: '/disputes' },
+        { label: 'Resolved', value: stats.resolved_disputes, icon: CheckCircle, color: 'text-sky-400', bg: 'bg-sky-500/10', border: 'border-sky-500/20', to: '/disputes' },
+        { label: 'Hotspots', value: stats.total_hotspots, icon: Flame, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20', to: '/map' },
+      ]
+    : []
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Dashboard Overview</h1>
-        {loading === false && (
-          <div className="text-sm text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard</h1>
+          <p className="text-sm text-slate-400 mt-0.5">
             Welcome back, {user?.first_name || user?.username || 'User'}
-          </div>
-        )}
+          </p>
+        </div>
+        <Link
+          to="/map"
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-500 transition-all"
+        >
+          <Map size={16} />
+          Open Map
+        </Link>
       </div>
 
+      {/* Stat Tiles */}
       {loading ? (
-        <div className="flex items-center justify-center p-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
-          <span className="ml-3 text-slate-500">Loading metrics...</span>
+        <div className="flex items-center justify-center p-16">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+          <span className="ml-3 text-slate-400">Loading metrics...</span>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {cards.map((card) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {tiles.map((tile) => (
             <Link
-              key={card.label}
-              to={card.to}
-              className="block rounded-2xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-200 hover:-translate-y-1 bg-white relative overflow-hidden group"
+              key={tile.label}
+              to={tile.to}
+              className={`rounded-xl border ${tile.border} bg-slate-900 p-4 hover:bg-slate-800 transition-all duration-200 group`}
             >
-              <div className="flex items-center justify-between mb-4 relative z-10">
-                <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider">{card.label}</span>
-                <div className={`p-3 rounded-xl ${card.bg}`}>
-                  <card.icon size={22} className={card.color} />
+              <div className="flex items-center justify-between mb-3">
+                <div className={`p-2 rounded-lg ${tile.bg}`}>
+                  <tile.icon size={18} className={tile.color} />
                 </div>
+                <ArrowRight size={14} className="text-slate-600 group-hover:text-slate-400 transition-colors" />
               </div>
-              <div className="text-4xl font-extrabold text-slate-800 tracking-tight relative z-10">{card.value}</div>
-              {/* Fixed missing map element inside cards */}
+              <div className="text-2xl font-bold text-white">{tile.value}</div>
+              <div className="text-xs text-slate-400 mt-1 font-medium">{tile.label}</div>
             </Link>
           ))}
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-        
-        {/* Quick Actions Panel */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-             <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-              <Map size={20} />
-             </div>
-            <h2 className="text-xl font-bold text-slate-800">Quick Actions</h2>
-          </div>
-          <div className="p-6 flex-1 flex flex-col gap-4 bg-slate-50/50">
-            <Link
-              to="/map"
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl text-sm font-semibold shadow hover:bg-emerald-700 hover:shadow-md transition-all active:scale-[0.98]"
-            >
-              <Map size={18} />
-              Open Interactive Map
-            </Link>
-            <Link
-              to="/disputes"
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-600 text-white rounded-xl text-sm font-semibold shadow hover:bg-amber-700 hover:shadow-md transition-all active:scale-[0.98]"
-            >
-              <AlertTriangle size={18} />
-              Review Dispute Conflicts
-            </Link>
-          </div>
-        </div>
-
-        {/* Backend Panel */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-              <Database size={20} />
+      {/* Recent Disputes */}
+      <div className="bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <AlertTriangle size={18} className="text-amber-400" />
+              </div>
+              <h2 className="text-base font-bold text-white">Recent Disputes</h2>
             </div>
-            <h2 className="text-xl font-bold text-slate-800">Backend</h2>
+            <Link to="/disputes" className="text-xs text-emerald-400 hover:text-emerald-300 font-medium">
+              View all &rarr;
+            </Link>
           </div>
-          <div className="p-6 flex-1 flex flex-col gap-4 bg-slate-50/50">
-            
-            <p className="text-sm text-slate-600 mb-2">
-              Access backend APIs for data management, conflict analysis, and report exports.
-            </p>
-
-            <a
-              href="/api/health/"
-              target="_blank"
-              rel="noreferrer"
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border border-slate-300 text-slate-700 rounded-xl text-sm font-semibold shadow-sm hover:bg-slate-50 hover:text-blue-600 transition-all active:scale-[0.98]"
-            >
-              <UploadCloud size={18} />
-              Check Backend Health
-            </a>
-           
-            {user?.role === 'ADMIN' && (
-              <a
-                href="/api/reports/summary/"
-                target="_blank"
-                rel="noreferrer"
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-white rounded-xl text-sm font-semibold shadow hover:bg-slate-900 transition-all active:scale-[0.98]"
-              >
-                <Shield size={18} />
-                View Summary API
-              </a>
+          <div className="divide-y divide-slate-800">
+            {recentDisputes.length === 0 ? (
+              <div className="px-5 py-8 text-center text-sm text-slate-500">
+                No disputes detected yet. Run conflict detection to find overlaps.
+              </div>
+            ) : (
+              recentDisputes.map((d) => (
+                <div key={d.id} className="px-5 py-3 flex items-center justify-between hover:bg-slate-800/50 transition-colors">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${d.status === 'OPEN' ? 'bg-red-400' : 'bg-emerald-400'}`} />
+                    <div className="min-w-0">
+                      <p className="text-sm text-white font-medium truncate">
+                        {d.mine_claim_code} vs {d.farm_parcel_code}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {d.conflict_area ? `${Number(d.conflict_area).toFixed(4)} ha` : '—'} &middot; {d.detected_at ? new Date(d.detected_at).toLocaleDateString() : '—'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                    d.status === 'OPEN'
+                      ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                      : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                  }`}>
+                    {d.status}
+                  </span>
+                </div>
+              ))
             )}
-            
           </div>
-        </div>
+      </div>
 
+      {/* Export & Quick Links */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <ExportButton url="/reports/disputes/csv/" filename="disputes_report.csv" icon={Download} iconBg="bg-sky-500/10" iconColor="text-sky-400" label="Export Disputes" />
+        <ExportButton url="/reports/mine-claims/csv/" filename="mine_claims_report.csv" icon={FileText} iconBg="bg-rose-500/10" iconColor="text-rose-400" label="Export Mine Claims" />
+        <ExportButton url="/reports/farm-parcels/csv/" filename="farm_parcels_report.csv" icon={TreePine} iconBg="bg-emerald-500/10" iconColor="text-emerald-400" label="Export Farm Parcels" />
       </div>
     </div>
+  )
+}
+
+function ExportButton({ url, filename, icon: Icon, iconBg, iconColor, label }) {
+  const [downloading, setDownloading] = useState(false)
+  const toast = useToast()
+
+  const handleDownload = async () => {
+    setDownloading(true)
+    try {
+      const res = await api.get(url, { responseType: 'blob' })
+      const blob = new Blob([res.data], { type: 'text/csv' })
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = filename
+      link.click()
+      URL.revokeObjectURL(link.href)
+      toast.success(`${label} downloaded.`)
+    } catch {
+      toast.error('Failed to download report.')
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={downloading}
+      className="flex items-center gap-3 px-5 py-4 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 transition-all text-left disabled:opacity-50"
+    >
+      <div className={`p-2 ${iconBg} rounded-lg`}>
+        {downloading
+          ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+          : <Icon size={16} className={iconColor} />
+        }
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-white">{label}</p>
+        <p className="text-xs text-slate-500">Download CSV report</p>
+      </div>
+    </button>
   )
 }

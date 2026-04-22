@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Map, Layers, AlertTriangle, Home, LogOut, ChevronDown, Shield } from 'lucide-react'
+import { Map, Layers, AlertTriangle, Home, LogOut, ChevronDown, Shield, Settings } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
-const links = [
+const baseLinks = [
   { to: '/', label: 'Dashboard', icon: Home },
   { to: '/map', label: 'Map', icon: Map },
   { to: '/claims', label: 'Claims', icon: Layers },
@@ -12,6 +12,9 @@ const links = [
 
 export default function Navbar() {
   const { user, logout } = useAuth()
+  const links = user?.role === 'ADMIN'
+    ? [...baseLinks, { to: '/admin', label: 'Admin', icon: Settings }]
+    : baseLinks
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
 

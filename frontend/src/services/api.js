@@ -71,6 +71,8 @@ export const boundariesApi = {
 export const disputesApi = {
   list: (params) => api.get('/disputes/', { params }),
   get: (id) => api.get(`/disputes/${id}/`),
+  update: (id, data) => api.put(`/disputes/${id}/`, data),
+  delete: (id) => api.delete(`/disputes/${id}/`),
 }
 
 export const hotspotsApi = {
@@ -90,6 +92,13 @@ export const reportsApi = {
   disputesCsv: () => '/api/reports/disputes/csv/',
   mineClaimsCsv: () => '/api/reports/mine-claims/csv/',
   farmParcelsCsv: () => '/api/reports/farm-parcels/csv/',
+}
+
+// users (admin)
+export const usersApi = {
+  list: () => api.get('/users/'),
+  update: (id, data) => api.put(`/users/${id}/`, data),
+  delete: (id) => api.delete(`/users/${id}/`),
 }
 
 export default api

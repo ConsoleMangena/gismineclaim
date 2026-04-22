@@ -1,11 +1,13 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ToastProvider } from './components/Toast'
 import ProtectedRoute from './components/ProtectedRoute'
 import Navbar from './components/Navbar'
 import Dashboard from './pages/Dashboard'
 import MapPage from './pages/MapPage'
 import ClaimsPage from './pages/ClaimsPage'
 import DisputesPage from './pages/DisputesPage'
+import AdminPage from './pages/AdminPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 
@@ -30,6 +32,7 @@ function AppRoutes() {
                   <Route path="/map" element={<MapPage />} />
                   <Route path="/claims" element={<ClaimsPage />} />
                   <Route path="/disputes" element={<DisputesPage />} />
+                  <Route path="/admin" element={<AdminPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </div>
@@ -44,7 +47,9 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <ToastProvider>
+        <AppRoutes />
+      </ToastProvider>
     </AuthProvider>
   )
 }

@@ -91,6 +91,12 @@ body {
 .auth-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
 .auth-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-slide-in { animation: slide-in 0.25s ease-out; }
+
 .auth-error {
   background: rgba(239,68,68,.1);
   border: 1px solid rgba(239,68,68,.3);
