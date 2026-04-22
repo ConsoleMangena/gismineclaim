@@ -7,9 +7,10 @@ const router = Router()
 
 router.post('/run-conflict-detection/', authMiddleware, async (_req, res) => {
   try {
+    // Detect mine↔farm overlaps and insert new disputes
     const result = await pool.query(
       `
-      WITH inserted AS (
+      WITH new_disputes AS (
         INSERT INTO disputes_dispute (
           mine_claim_id, farm_parcel_id, conflict_area, status, detected_at, geom
         )
@@ -23,15 +24,31 @@ router.post('/run-conflict-detection/', authMiddleware, async (_req, res) => {
         FROM spatial_data_mineclaim mc
         JOIN spatial_data_farmparcel fp
           ON ST_Intersects(mc.geom, fp.geom)
+          AND NOT ST_Touches(mc.geom, fp.geom)
         LEFT JOIN disputes_dispute d
           ON d.mine_claim_id = mc.id AND d.farm_parcel_id = fp.id
-        WHERE mc.status IN ('ACTIVE', 'DISPUTED')
+        WHERE mc.geom IS NOT NULL
+          AND fp.geom IS NOT NULL
           AND d.id IS NULL
+        RETURNING mine_claim_id
       )
-      SELECT COUNT(*)::int AS created_count FROM inserted;
+      SELECT COUNT(*)::int AS created_count FROM new_disputes;
       `
     )
     const count = result.rows[0]?.created_count || 0
+
+    // Mark all mines that have open disputes as DISPUTED
+    if (count > 0) {
+      await pool.query(`
+        UPDATE spatial_data_mineclaim
+        SET status = 'DISPUTED'
+        WHERE id IN (
+          SELECT DISTINCT mine_claim_id FROM disputes_dispute WHERE status = 'OPEN'
+        )
+        AND status != 'DISPUTED'
+      `)
+    }
+
     return res.json({
       message: `${count} new conflict(s) detected.`,
       new_disputes: count,

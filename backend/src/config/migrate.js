@@ -126,12 +126,11 @@ async function seedKwekweData() {
 
   console.log('Seeding Kwekwe sample data...')
 
-  // ─── Owners ────────────────────────────────────────────────────
+  // ─── Owners (7 owners) ─────────────────────────────────────────
   const owners = await pool.query(`
     INSERT INTO spatial_data_owner (name, national_id, phone, email, address) VALUES
       ('Tendai Moyo',       '29-123456A78', '+263 771 234 567', 'tendai.moyo@gmail.com',     '12 Robert Mugabe Way, Kwekwe'),
       ('Grace Sibanda',     '29-234567B89', '+263 772 345 678', 'grace.sibanda@yahoo.com',   '45 Harare Rd, Kwekwe'),
-      ('Tapiwa Ncube',      '29-345678C90', '+263 773 456 789', 'tapiwa.ncube@outlook.com',  'Stand 78, Mbizo Township, Kwekwe'),
       ('Rumbidzai Chikore', '29-456789D01', '+263 774 567 890', 'rchikore@minecorp.co.zw',   'Farm Lot 3, Kwekwe Rural'),
       ('Blessing Maphosa',  '29-567890E12', '+263 775 678 901', 'blessing.m@agrimail.co.zw', 'Plot 22, Sebakwe, Kwekwe'),
       ('Farai Dzimba',      '29-678901F23', '+263 776 789 012', 'farai.dzimba@gmail.com',    '9 Fifth Street, Kwekwe'),
@@ -139,138 +138,210 @@ async function seedKwekweData() {
       ('Chenai Gumbo',      '29-890123H45', '+263 778 901 234', 'chenai.g@goldmine.co.zw',   '3 Globe & Phoenix Rd, Kwekwe')
     RETURNING id
   `)
+  // oid[0]=Tendai, oid[1]=Grace, oid[2]=Rumbidzai, oid[3]=Blessing,
+  // oid[4]=Farai, oid[5]=Nyasha, oid[6]=Chenai
   const oid = owners.rows.map(r => Number(r.id))
 
-  // ─── Mine Claims (Kwekwe is a major gold & chrome belt) ────────
-  // Coordinates centred around Kwekwe: lat ~-18.93, lng ~29.82
-  // Owner IDs are interpolated directly because the node-pg driver cannot
-  // resolve parameterised types in multi-row VALUES with PostGIS functions.
+  // ─── Mine Claims (Kwekwe outskirts — rural mining areas) ─────────
+  // Kwekwe town centre ≈ -18.928, 29.815.  All mines placed 15–30 km out.
   await pool.query(`
     INSERT INTO spatial_data_mineclaim
       (claim_code, claim_name, claim_reg_no, mine_type, owner_id, area, status, district, surveyed_date, surveyor, coordinate_system, geom)
     VALUES
+      -- Zone A: North-Northwest (Globe & Phoenix mining area, ~20 km N)
       ('MC-KWE-001', 'Globe & Phoenix Gold',   'REG/2023/0451', 'Gold',     ${oid[0]}, 125.50, 'ACTIVE',   'Kwekwe', '2023-06-15', 'J. Mapuranga (SG)',  'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.810,-18.920],[29.820,-18.920],[29.820,-18.930],[29.810,-18.930],[29.810,-18.920]]]}'), 4326)),
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.720,-18.820],[29.738,-18.820],[29.738,-18.832],[29.720,-18.832],[29.720,-18.820]]]}'), 4326)),
 
-      ('MC-KWE-002', 'Doris Gold Claim',       'REG/2023/0452', 'Gold',     ${oid[1]}, 87.30,  'ACTIVE',   'Kwekwe', '2023-08-22', 'T. Chigumba (SG)',  'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.825,-18.935],[29.838,-18.935],[29.838,-18.945],[29.825,-18.945],[29.825,-18.935]]]}'), 4326)),
+      ('MC-KWE-012', 'Kwekwe Central Platinum', 'REG/2023/0710', 'Platinum', ${oid[0]}, 92.00,  'ACTIVE',   'Kwekwe', '2023-03-18', 'J. Mapuranga (SG)', 'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.740,-18.815],[29.756,-18.815],[29.756,-18.828],[29.740,-18.828],[29.740,-18.815]]]}'), 4326)),
 
-      ('MC-KWE-003', 'Indarama Chrome',        'REG/2024/0078', 'Chrome',   ${oid[2]}, 210.00, 'ACTIVE',   'Kwekwe', '2024-01-10', 'R. Nkomo (SG)',     'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.790,-18.905],[29.808,-18.905],[29.808,-18.918],[29.790,-18.918],[29.790,-18.905]]]}'), 4326)),
+      -- Zone B: East (Munyati / Doris area, ~15 km E)
+      ('MC-KWE-002', 'Doris Gold Claim',       'REG/2023/0452', 'Gold',     ${oid[1]}, 87.30,  'DISPUTED', 'Kwekwe', '2023-08-22', 'T. Chigumba (SG)',  'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.870,-18.860],[29.888,-18.860],[29.888,-18.875],[29.870,-18.875],[29.870,-18.860]]]}'), 4326)),
 
-      ('MC-KWE-004', 'Sebakwe Gold',           'REG/2022/0310', 'Gold',     ${oid[3]}, 56.80,  'EXPIRED',  'Kwekwe', '2022-03-05', 'J. Mapuranga (SG)',  'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.845,-18.950],[29.855,-18.950],[29.855,-18.958],[29.845,-18.958],[29.845,-18.950]]]}'), 4326)),
+      ('MC-KWE-006', 'Munyati Gold Reef',      'REG/2023/0599', 'Gold',     ${oid[4]}, 98.20,  'DISPUTED', 'Kwekwe', '2023-11-02', 'T. Chigumba (SG)',  'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.930,-18.870],[29.948,-18.870],[29.948,-18.888],[29.930,-18.888],[29.930,-18.870]]]}'), 4326)),
 
-      ('MC-KWE-005', 'Zim Alloys Block A',     'REG/2024/0112', 'Chrome',   ${oid[7]}, 340.00, 'ACTIVE',   'Kwekwe', '2024-04-18', 'S. Moyo (SG)',      'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.770,-18.910],[29.795,-18.910],[29.795,-18.928],[29.770,-18.928],[29.770,-18.910]]]}'), 4326)),
+      -- Zone C: Northeast (Chrome belt toward Kadoma, ~20 km NE)
+      ('MC-KWE-003', 'Indarama Chrome',        'REG/2024/0078', 'Chrome',   ${oid[6]}, 210.00, 'DISPUTED', 'Kwekwe', '2024-01-10', 'R. Nkomo (SG)',     'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.880,-18.810],[29.905,-18.810],[29.905,-18.830],[29.880,-18.830],[29.880,-18.810]]]}'), 4326)),
 
-      ('MC-KWE-006', 'Munyati Gold Reef',      'REG/2023/0599', 'Gold',     ${oid[5]}, 98.20,  'DISPUTED', 'Kwekwe', '2023-11-02', 'T. Chigumba (SG)',  'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.835,-18.915],[29.848,-18.915],[29.848,-18.928],[29.835,-18.928],[29.835,-18.915]]]}'), 4326)),
+      ('MC-KWE-005', 'Zim Alloys Block A',     'REG/2024/0112', 'Chrome',   ${oid[6]}, 340.00, 'DISPUTED', 'Kwekwe', '2024-04-18', 'S. Moyo (SG)',      'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.870,-18.825],[29.900,-18.825],[29.900,-18.852],[29.870,-18.852],[29.870,-18.825]]]}'), 4326)),
 
-      ('MC-KWE-007', 'Patchway Nickel',        'REG/2024/0203', 'Nickel',   ${oid[6]}, 175.00, 'ACTIVE',   'Kwekwe', '2024-02-28', 'R. Nkomo (SG)',     'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.800,-18.940],[29.818,-18.940],[29.818,-18.955],[29.800,-18.955],[29.800,-18.940]]]}'), 4326)),
+      ('MC-KWE-009', 'Kadoma Gold Extension',  'REG/2024/0415', 'Gold',     ${oid[2]}, 145.00, 'DISPUTED', 'Kwekwe', '2024-08-05', 'J. Mapuranga (SG)', 'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.960,-18.810],[29.985,-18.810],[29.985,-18.830],[29.960,-18.830],[29.960,-18.810]]]}'), 4326)),
 
+      -- Zone D: West (Zhombe area, ~25 km W)
+      ('MC-KWE-010', 'Zhombe Chrome Claim',    'REG/2024/0520', 'Chrome',   ${oid[3]}, 190.00, 'DISPUTED', 'Kwekwe', '2024-09-12', 'R. Nkomo (SG)',     'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.580,-18.920],[29.610,-18.920],[29.610,-18.945],[29.580,-18.945],[29.580,-18.920]]]}'), 4326)),
+
+      ('MC-KWE-014', 'Mbizo Iron Ore',         'REG/2024/0055', 'Iron',     ${oid[1]}, 310.00, 'ACTIVE',   'Kwekwe', '2024-01-22', 'S. Moyo (SG)',      'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.640,-18.900],[29.665,-18.900],[29.665,-18.920],[29.640,-18.920],[29.640,-18.900]]]}'), 4326)),
+
+      -- Zone E: Southwest (Patchway / Sebakwe, ~20 km SW)
+      ('MC-KWE-007', 'Patchway Nickel',        'REG/2024/0203', 'Nickel',   ${oid[5]}, 175.00, 'ACTIVE',   'Kwekwe', '2024-02-28', 'R. Nkomo (SG)',     'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.700,-18.980],[29.722,-18.980],[29.722,-18.998],[29.700,-18.998],[29.700,-18.980]]]}'), 4326)),
+
+      ('MC-KWE-004', 'Sebakwe Gold',           'REG/2022/0310', 'Gold',     ${oid[2]}, 56.80,  'EXPIRED',  'Kwekwe', '2022-03-05', 'J. Mapuranga (SG)',  'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.730,-19.010],[29.748,-19.010],[29.748,-19.025],[29.730,-19.025],[29.730,-19.010]]]}'), 4326)),
+
+      ('MC-KWE-015', 'Redcliff Limestone',     'REG/2023/0822', 'Other',    ${oid[4]}, 78.50,  'ACTIVE',   'Kwekwe', '2023-12-12', 'T. Chigumba (SG)', 'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.760,-19.020],[29.778,-19.020],[29.778,-19.035],[29.760,-19.035],[29.760,-19.020]]]}'), 4326)),
+
+      -- Zone F: Far Southwest (Silobela, ~30 km SW)
+      ('MC-KWE-011', 'Silobela Lithium',       'REG/2024/0633', 'Lithium',  ${oid[6]}, 220.00, 'DISPUTED', 'Kwekwe', '2024-10-20', 'T. Chigumba (SG)', 'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.550,-19.060],[29.580,-19.060],[29.580,-19.085],[29.550,-19.085],[29.550,-19.060]]]}'), 4326)),
+
+      -- Zone G: Southeast (Ripple Creek / toward Gweru, ~20 km SE)
       ('MC-KWE-008', 'Ripple Creek Gold',      'REG/2024/0301', 'Gold',     ${oid[0]}, 63.40,  'ACTIVE',   'Kwekwe', '2024-06-10', 'S. Moyo (SG)',      'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.815,-18.960],[29.828,-18.960],[29.828,-18.970],[29.815,-18.970],[29.815,-18.960]]]}'), 4326)),
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.850,-19.000],[29.870,-19.000],[29.870,-19.015],[29.850,-19.015],[29.850,-19.000]]]}'), 4326)),
 
-      ('MC-KWE-009', 'Kadoma Gold Extension',  'REG/2024/0415', 'Gold',     ${oid[3]}, 145.00, 'DISPUTED', 'Kwekwe', '2024-08-05', 'J. Mapuranga (SG)', 'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.860,-18.910],[29.878,-18.910],[29.878,-18.925],[29.860,-18.925],[29.860,-18.910]]]}'), 4326)),
+      ('MC-KWE-013', 'Lower Gweru Tantalite',  'REG/2022/0488', 'Tantalite', ${oid[1]}, 158.00, 'ACTIVE',   'Kwekwe', '2022-09-05', 'R. Nkomo (SG)',     'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.880,-19.020],[29.905,-19.020],[29.905,-19.038],[29.880,-19.038],[29.880,-19.020]]]}'), 4326)),
 
-      ('MC-KWE-010', 'Zhombe Chrome Claim',    'REG/2024/0520', 'Chrome',   ${oid[4]}, 190.00, 'DISPUTED', 'Kwekwe', '2024-09-12', 'R. Nkomo (SG)',     'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.750,-18.940],[29.772,-18.940],[29.772,-18.958],[29.750,-18.958],[29.750,-18.940]]]}'), 4326)),
-
-      ('MC-KWE-011', 'Silobela Lithium',       'REG/2024/0633', 'Lithium',  ${oid[7]}, 220.00, 'DISPUTED', 'Kwekwe', '2024-10-20', 'T. Chigumba (SG)', 'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.780,-18.970],[29.800,-18.970],[29.800,-18.988],[29.780,-18.988],[29.780,-18.970]]]}'), 4326))
+      -- Zone H: Far South (Ngezi, ~25 km S) — mine surveyed 10 yrs after farm
+      ('MC-KWE-016', 'Ngezi Gold Prospect',    'REG/2023/0940', 'Gold',     ${oid[2]}, 185.00, 'DISPUTED', 'Kwekwe', '2023-07-14', 'J. Mapuranga (SG)', 'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.780,-19.120],[29.810,-19.120],[29.810,-19.145],[29.780,-19.145],[29.780,-19.120]]]}'), 4326))
   `)
 
-  // ─── Farm Parcels (around Kwekwe farming areas) ────────────────
+  // ─── Farm Parcels (rural areas surrounding Kwekwe) ─────────────
   await pool.query(`
     INSERT INTO spatial_data_farmparcel
       (parcel_code, farm_name, deed_no, lease_type, owner_id, land_use, area, survey_date, surveyor, coordinate_system, geom)
     VALUES
-      ('FP-KWE-001', 'Doongwai Farm',     'DEED/2020/KWE/001', 'Title Deed',   ${oid[3]}, 'Mixed farming',    450.00, '2020-05-12', 'P. Banda (SG)',     'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.820,-18.925],[29.840,-18.925],[29.840,-18.940],[29.820,-18.940],[29.820,-18.925]]]}'), 4326)),
+      -- Zone B: East — overlaps MC-KWE-002
+      ('FP-KWE-001', 'Doongwai Farm',     'DEED/2020/KWE/001', 'Title Deed',   ${oid[2]}, 'Mixed farming',    450.00, '2020-05-12', 'P. Banda (SG)',     'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.860,-18.855],[29.895,-18.855],[29.895,-18.880],[29.860,-18.880],[29.860,-18.855]]]}'), 4326)),
 
-      ('FP-KWE-002', 'Sherwood Farm',     'DEED/2019/KWE/045', 'Title Deed',   ${oid[4]}, 'Cattle ranching',  820.00, '2019-09-30', 'J. Mapuranga (SG)', 'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.790,-18.945],[29.815,-18.945],[29.815,-18.965],[29.790,-18.965],[29.790,-18.945]]]}'), 4326)),
+      -- Zone G: Southeast
+      ('FP-KWE-002', 'Sherwood Farm',     'DEED/2019/KWE/045', 'Title Deed',   ${oid[3]}, 'Cattle ranching',  820.00, '2019-09-30', 'J. Mapuranga (SG)', 'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.840,-18.990],[29.875,-18.990],[29.875,-19.020],[29.840,-19.020],[29.840,-18.990]]]}'), 4326)),
 
-      ('FP-KWE-003', 'Sebakwe Ranch',     'OL/2021/KWE/012',   'Offer Letter', ${oid[4]}, 'Cattle ranching',  600.00, '2021-02-18', 'T. Chigumba (SG)', 'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.840,-18.948],[29.860,-18.948],[29.860,-18.962],[29.840,-18.962],[29.840,-18.948]]]}'), 4326)),
+      ('FP-KWE-003', 'Sebakwe Ranch',     'OL/2021/KWE/012',   'Offer Letter', ${oid[3]}, 'Cattle ranching',  600.00, '2021-02-18', 'T. Chigumba (SG)', 'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.820,-19.010],[29.850,-19.010],[29.850,-19.030],[29.820,-19.030],[29.820,-19.010]]]}'), 4326)),
 
-      ('FP-KWE-004', 'Mbizo Crop Plot',   'LEASE/2022/KWE/003','Lease',        ${oid[2]}, 'Crop farming',     35.00,  '2022-07-01', 'R. Nkomo (SG)',     'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.828,-18.932],[29.836,-18.932],[29.836,-18.938],[29.828,-18.938],[29.828,-18.932]]]}'), 4326)),
+      -- Zone E: Southwest — overlaps MC-KWE-007
+      ('FP-KWE-004', 'Patchway Estate',   'DEED/2018/KWE/078', 'Title Deed',   ${oid[5]}, 'Tobacco & maize',  520.00, '2018-11-15', 'P. Banda (SG)',     'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.695,-18.975],[29.730,-18.975],[29.730,-19.000],[29.695,-19.000],[29.695,-18.975]]]}'), 4326)),
 
-      ('FP-KWE-005', 'Patchway Estate',   'DEED/2018/KWE/078', 'Title Deed',   ${oid[6]}, 'Tobacco & maize',  520.00, '2018-11-15', 'P. Banda (SG)',     'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.798,-18.935],[29.820,-18.935],[29.820,-18.950],[29.798,-18.950],[29.798,-18.935]]]}'), 4326)),
+      -- Zone B: East — overlaps MC-KWE-006
+      ('FP-KWE-005', 'Munyati Irrigation','OL/2023/KWE/021',   'Offer Letter', ${oid[4]}, 'Irrigated crops',  280.00, '2023-03-20', 'S. Moyo (SG)',      'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.920,-18.865],[29.950,-18.865],[29.950,-18.890],[29.920,-18.890],[29.920,-18.865]]]}'), 4326)),
 
-      ('FP-KWE-006', 'Munyati Irrigation','OL/2023/KWE/021',   'Offer Letter', ${oid[5]}, 'Irrigated crops',  280.00, '2023-03-20', 'S. Moyo (SG)',      'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.830,-18.910],[29.850,-18.910],[29.850,-18.925],[29.830,-18.925],[29.830,-18.910]]]}'), 4326)),
+      -- Zone C: Northeast — overlaps MC-KWE-009
+      ('FP-KWE-006', 'Kadoma Estates',    'DEED/2021/KWE/092', 'Title Deed',   ${oid[1]}, 'Mixed farming',    380.00, '2021-06-10', 'P. Banda (SG)',     'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.955,-18.805],[29.990,-18.805],[29.990,-18.828],[29.955,-18.828],[29.955,-18.805]]]}'), 4326)),
 
-      ('FP-KWE-007', 'Kadoma Estates',    'DEED/2021/KWE/092', 'Title Deed',   ${oid[1]}, 'Mixed farming',    380.00, '2021-06-10', 'P. Banda (SG)',     'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.855,-18.908],[29.880,-18.908],[29.880,-18.922],[29.855,-18.922],[29.855,-18.908]]]}'), 4326)),
+      -- Zone D: West — overlaps MC-KWE-010
+      ('FP-KWE-007', 'Zhombe Grazing',    'OL/2022/KWE/035',   'Offer Letter', ${oid[5]}, 'Cattle ranching',  710.00, '2022-04-25', 'R. Nkomo (SG)',     'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.570,-18.912],[29.620,-18.912],[29.620,-18.950],[29.570,-18.950],[29.570,-18.912]]]}'), 4326)),
 
-      ('FP-KWE-008', 'Zhombe Grazing',    'OL/2022/KWE/035',   'Offer Letter', ${oid[6]}, 'Cattle ranching',  710.00, '2022-04-25', 'R. Nkomo (SG)',     'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.748,-18.938],[29.775,-18.938],[29.775,-18.960],[29.748,-18.960],[29.748,-18.938]]]}'), 4326)),
+      -- Zone F: Far Southwest — overlaps MC-KWE-011
+      ('FP-KWE-008', 'Silobela Farmlands','LEASE/2023/KWE/018','Lease',        ${oid[0]}, 'Crop farming',     430.00, '2023-08-15', 'S. Moyo (SG)',      'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.540,-19.050],[29.590,-19.050],[29.590,-19.090],[29.540,-19.090],[29.540,-19.050]]]}'), 4326)),
 
-      ('FP-KWE-009', 'Silobela Farmlands','LEASE/2023/KWE/018','Lease',        ${oid[2]}, 'Crop farming',     430.00, '2023-08-15', 'S. Moyo (SG)',      'WGS84',
-        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.775,-18.968],[29.805,-18.968],[29.805,-18.990],[29.775,-18.990],[29.775,-18.968]]]}'), 4326))
+      -- Zone H: Far South — large farm surveyed 2013, MC-KWE-016 encroached 2023
+      ('FP-KWE-009', 'Ngezi Valley Estate','DEED/2013/KWE/022','Title Deed',   ${oid[3]}, 'Cattle & crops', 1250.00, '2013-05-20', 'P. Banda (SG)',     'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.770,-19.100],[29.820,-19.100],[29.820,-19.150],[29.770,-19.150],[29.770,-19.100]]]}'), 4326)),
+
+      -- Zone C: NE — large farm overlapping MC-KWE-003 (Indarama) and MC-KWE-005 (Zim Alloys)
+      ('FP-KWE-010', 'Kwekwe North Farm', 'DEED/2015/KWE/031', 'Title Deed',   ${oid[2]}, 'Mixed farming',  950.00, '2015-03-10', 'P. Banda (SG)',     'WGS84',
+        ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.870,-18.800],[29.950,-18.800],[29.950,-18.850],[29.870,-18.850],[29.870,-18.800]]]}'), 4326))
   `)
 
-  // ─── Disputes (overlapping claim & farm) ───────────────────────
-  // MC-KWE-006 (Munyati Gold Reef) overlaps FP-KWE-006 (Munyati Irrigation)
-  // MC-KWE-002 (Doris Gold) overlaps FP-KWE-004 (Mbizo Crop Plot)
+  // ─── Disputes — genuinely overlapping mine↔farm geometries ─────
+  // 1. MC-KWE-006 (Munyati Gold Reef) ↔ FP-KWE-005 (Munyati Irrigation)
+  //    Mine: 29.930–29.948, -18.870→-18.888 | Farm: 29.920–29.950, -18.865→-18.890
   await pool.query(`
     INSERT INTO disputes_dispute (mine_claim_id, farm_parcel_id, conflict_area, status, detected_at, geom)
     SELECT mc.id, fp.id, 42.50, 'OPEN', '2024-05-15',
-      ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.835,-18.915],[29.848,-18.915],[29.848,-18.925],[29.835,-18.925],[29.835,-18.915]]]}'), 4326)
+      ST_Intersection(mc.geom, fp.geom)
     FROM spatial_data_mineclaim mc, spatial_data_farmparcel fp
-    WHERE mc.claim_code = 'MC-KWE-006' AND fp.parcel_code = 'FP-KWE-006'
+    WHERE mc.claim_code = 'MC-KWE-006' AND fp.parcel_code = 'FP-KWE-005'
   `)
 
-  await pool.query(`
-    INSERT INTO disputes_dispute (mine_claim_id, farm_parcel_id, conflict_area, status, detected_at, geom)
-    SELECT mc.id, fp.id, 12.80, 'OPEN', '2024-07-02',
-      ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.828,-18.935],[29.836,-18.935],[29.836,-18.938],[29.828,-18.938],[29.828,-18.935]]]}'), 4326)
-    FROM spatial_data_mineclaim mc, spatial_data_farmparcel fp
-    WHERE mc.claim_code = 'MC-KWE-002' AND fp.parcel_code = 'FP-KWE-004'
-  `)
-
+  // 2. MC-KWE-007 (Patchway Nickel) ↔ FP-KWE-004 (Patchway Estate)
+  //    Mine: 29.700–29.722, -18.980→-18.998 | Farm: 29.695–29.730, -18.975→-19.000
   await pool.query(`
     INSERT INTO disputes_dispute (mine_claim_id, farm_parcel_id, conflict_area, status, detected_at, resolved_at, geom)
     SELECT mc.id, fp.id, 28.10, 'RESOLVED', '2023-12-01', '2024-03-15',
-      ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.800,-18.940],[29.818,-18.940],[29.818,-18.950],[29.800,-18.950],[29.800,-18.940]]]}'), 4326)
+      ST_Intersection(mc.geom, fp.geom)
     FROM spatial_data_mineclaim mc, spatial_data_farmparcel fp
-    WHERE mc.claim_code = 'MC-KWE-007' AND fp.parcel_code = 'FP-KWE-005'
+    WHERE mc.claim_code = 'MC-KWE-007' AND fp.parcel_code = 'FP-KWE-004'
   `)
 
-  // MC-KWE-009 (Kadoma Gold Extension) overlaps FP-KWE-007 (Kadoma Estates)
+  // 3. MC-KWE-009 (Kadoma Gold Extension) ↔ FP-KWE-006 (Kadoma Estates)
+  //    Mine: 29.960–29.985, -18.810→-18.830 | Farm: 29.955–29.990, -18.805→-18.828
   await pool.query(`
     INSERT INTO disputes_dispute (mine_claim_id, farm_parcel_id, conflict_area, status, detected_at, geom)
     SELECT mc.id, fp.id, 55.30, 'OPEN', '2024-08-20',
-      ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.860,-18.910],[29.878,-18.910],[29.878,-18.922],[29.860,-18.922],[29.860,-18.910]]]}'), 4326)
+      ST_Intersection(mc.geom, fp.geom)
     FROM spatial_data_mineclaim mc, spatial_data_farmparcel fp
-    WHERE mc.claim_code = 'MC-KWE-009' AND fp.parcel_code = 'FP-KWE-007'
+    WHERE mc.claim_code = 'MC-KWE-009' AND fp.parcel_code = 'FP-KWE-006'
   `)
 
-  // MC-KWE-010 (Zhombe Chrome Claim) overlaps FP-KWE-008 (Zhombe Grazing)
+  // 4. MC-KWE-010 (Zhombe Chrome) ↔ FP-KWE-007 (Zhombe Grazing)
+  //    Mine: 29.580–29.610, -18.920→-18.945 | Farm: 29.570–29.620, -18.912→-18.950
   await pool.query(`
     INSERT INTO disputes_dispute (mine_claim_id, farm_parcel_id, conflict_area, status, detected_at, geom)
     SELECT mc.id, fp.id, 38.70, 'OPEN', '2024-09-28',
-      ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.750,-18.940],[29.772,-18.940],[29.772,-18.958],[29.750,-18.958],[29.750,-18.940]]]}'), 4326)
+      ST_Intersection(mc.geom, fp.geom)
     FROM spatial_data_mineclaim mc, spatial_data_farmparcel fp
-    WHERE mc.claim_code = 'MC-KWE-010' AND fp.parcel_code = 'FP-KWE-008'
+    WHERE mc.claim_code = 'MC-KWE-010' AND fp.parcel_code = 'FP-KWE-007'
   `)
 
-  // MC-KWE-011 (Silobela Lithium) overlaps FP-KWE-009 (Silobela Farmlands)
+  // 5. MC-KWE-011 (Silobela Lithium) ↔ FP-KWE-008 (Silobela Farmlands)
+  //    Mine: 29.550–29.580, -19.060→-19.085 | Farm: 29.540–29.590, -19.050→-19.090
   await pool.query(`
     INSERT INTO disputes_dispute (mine_claim_id, farm_parcel_id, conflict_area, status, detected_at, geom)
     SELECT mc.id, fp.id, 72.40, 'OPEN', '2024-11-05',
-      ST_SetSRID(ST_GeomFromGeoJSON('{"type":"Polygon","coordinates":[[[29.780,-18.970],[29.800,-18.970],[29.800,-18.988],[29.780,-18.988],[29.780,-18.970]]]}'), 4326)
+      ST_Intersection(mc.geom, fp.geom)
     FROM spatial_data_mineclaim mc, spatial_data_farmparcel fp
-    WHERE mc.claim_code = 'MC-KWE-011' AND fp.parcel_code = 'FP-KWE-009'
+    WHERE mc.claim_code = 'MC-KWE-011' AND fp.parcel_code = 'FP-KWE-008'
   `)
 
-  console.log('✅ Kwekwe sample data seeded: 8 owners, 11 mine claims, 9 farm parcels, 6 disputes')
+  // 6. MC-KWE-016 (Ngezi Gold 2023) ↔ FP-KWE-009 (Ngezi Valley 2013) — 10 yr encroachment
+  //    Mine: 29.780–29.810, -19.120→-19.145 | Farm: 29.770–29.820, -19.100→-19.150
+  await pool.query(`
+    INSERT INTO disputes_dispute (mine_claim_id, farm_parcel_id, conflict_area, status, detected_at, geom)
+    SELECT mc.id, fp.id, 185.00, 'OPEN', '2023-08-01',
+      ST_Intersection(mc.geom, fp.geom)
+    FROM spatial_data_mineclaim mc, spatial_data_farmparcel fp
+    WHERE mc.claim_code = 'MC-KWE-016' AND fp.parcel_code = 'FP-KWE-009'
+  `)
+
+  // 7. MC-KWE-003 (Indarama Chrome 210ha) ↔ FP-KWE-010 (Kwekwe North Farm)
+  //    Mine: 29.880–29.905, -18.810→-18.830 | Farm: 29.870–29.950, -18.800→-18.850
+  await pool.query(`
+    INSERT INTO disputes_dispute (mine_claim_id, farm_parcel_id, conflict_area, status, detected_at, geom)
+    SELECT mc.id, fp.id, 32.50, 'OPEN', '2024-02-10',
+      ST_Intersection(mc.geom, fp.geom)
+    FROM spatial_data_mineclaim mc, spatial_data_farmparcel fp
+    WHERE mc.claim_code = 'MC-KWE-003' AND fp.parcel_code = 'FP-KWE-010'
+  `)
+
+  // 8. MC-KWE-005 (Zim Alloys 340ha) ↔ FP-KWE-010 (Kwekwe North Farm)
+  //    Mine: 29.870–29.900, -18.825→-18.852 | Farm: 29.870–29.950, -18.800→-18.850
+  await pool.query(`
+    INSERT INTO disputes_dispute (mine_claim_id, farm_parcel_id, conflict_area, status, detected_at, geom)
+    SELECT mc.id, fp.id, 48.80, 'OPEN', '2024-05-01',
+      ST_Intersection(mc.geom, fp.geom)
+    FROM spatial_data_mineclaim mc, spatial_data_farmparcel fp
+    WHERE mc.claim_code = 'MC-KWE-005' AND fp.parcel_code = 'FP-KWE-010'
+  `)
+
+  // 9. MC-KWE-002 (Doris Gold) ↔ FP-KWE-001 (Doongwai Farm)
+  //    Mine: 29.870–29.888, -18.860→-18.875 | Farm: 29.860–29.895, -18.855→-18.880
+  await pool.query(`
+    INSERT INTO disputes_dispute (mine_claim_id, farm_parcel_id, conflict_area, status, detected_at, geom)
+    SELECT mc.id, fp.id, 8.50, 'OPEN', '2024-09-10',
+      ST_Intersection(mc.geom, fp.geom)
+    FROM spatial_data_mineclaim mc, spatial_data_farmparcel fp
+    WHERE mc.claim_code = 'MC-KWE-002' AND fp.parcel_code = 'FP-KWE-001'
+  `)
+
+  console.log('✅ Kwekwe sample data seeded: 7 owners, 16 mine claims, 10 farm parcels, 9 disputes')
 }
 
 async function migrate() {
