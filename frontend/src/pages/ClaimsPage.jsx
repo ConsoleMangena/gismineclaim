@@ -30,7 +30,7 @@ export default function ClaimsPage() {
         <p className="text-slate-500">Loading...</p>
       ) : claims.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500">
-          No mine claims found. Add claims via the Django admin or API.
+          No mine claims found. Add claims via the backend API.
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
