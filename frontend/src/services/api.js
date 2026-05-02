@@ -62,6 +62,14 @@ export const parcelsApi = {
   delete: (id) => api.delete(`/farm-parcels/${id}/`),
 }
 
+export const trigStationsApi = {
+  list: () => api.get('/trig-stations/'),
+  upload: (formData) => api.post('/trig-stations/upload/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  delete: (id) => api.delete(`/trig-stations/${id}/`),
+}
+
 export const boundariesApi = {
   list: (params) => api.get('/boundaries/', { params }),
   get: (id) => api.get(`/boundaries/${id}/`),

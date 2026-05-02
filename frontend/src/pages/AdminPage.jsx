@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Settings, Users, Layers, TreePine, AlertTriangle, Plus, Pencil, Trash2, X, Save, Shield,
+  Settings, Users, Layers, TreePine, AlertTriangle, Plus, Pencil, Trash2, X, Save, Shield, Printer,
 } from 'lucide-react'
 import { ownersApi, claimsApi, parcelsApi, disputesApi, usersApi } from '../services/api'
 import { useAuth } from '../context/AuthContext'
@@ -18,13 +18,13 @@ const TABS = [
 // ─── Modal Shell ──────────────────────────────────────────────
 function Modal({ title, onClose, children }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-lg mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700 shrink-0">
           <h3 className="text-base font-bold text-white">{title}</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-white"><X size={18} /></button>
         </div>
-        <div className="p-5 space-y-4">{children}</div>
+        <div className="p-5 space-y-4 overflow-y-auto">{children}</div>
       </div>
     </div>
   )
@@ -302,14 +302,19 @@ function ClaimsTab() {
             <Input label="District" value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })} placeholder="e.g. Mazowe" />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Area (ha)" type="number" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
+            <Input label="Area (ha)" type="number" readOnly value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} placeholder="Auto-calculated" />
             <CRSSelect value={form.coordinate_system} onChange={(e) => setForm({ ...form, coordinate_system: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input label="Survey Date" type="date" value={form.surveyed_date} onChange={(e) => setForm({ ...form, surveyed_date: e.target.value })} />
             <Input label="Surveyor" value={form.surveyor} onChange={(e) => setForm({ ...form, surveyor: e.target.value })} placeholder="Surveyor name" />
           </div>
-          <GeoFileUpload value={form.geom} onChange={(v) => setForm({ ...form, geom: v })} />
+          <GeoFileUpload value={form.geom} onChange={(v, crs, area) => setForm((prev) => ({ 
+            ...prev, 
+            geom: v, 
+            ...(crs ? { coordinate_system: crs } : {}),
+            ...(area ? { area } : {})
+          }))} />
           <SaveBtn saving={saving} onClick={handleSave} />
         </Modal>
       )}
@@ -425,14 +430,19 @@ function ParcelsTab() {
           <Select label="Owner *" value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })} options={owners.map((o) => ({ value: o.id, label: `${o.name} (${o.national_id})` }))} />
           <div className="grid grid-cols-2 gap-3">
             <Input label="Land Use" value={form.land_use} onChange={(e) => setForm({ ...form, land_use: e.target.value })} placeholder="e.g. Crop farming" />
-            <Input label="Area (ha)" type="number" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
+            <Input label="Area (ha)" type="number" readOnly value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} placeholder="Auto-calculated" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input label="Survey Date" type="date" value={form.survey_date} onChange={(e) => setForm({ ...form, survey_date: e.target.value })} />
             <Input label="Surveyor" value={form.surveyor} onChange={(e) => setForm({ ...form, surveyor: e.target.value })} placeholder="Surveyor name" />
           </div>
           <CRSSelect value={form.coordinate_system} onChange={(e) => setForm({ ...form, coordinate_system: e.target.value })} />
-          <GeoFileUpload value={form.geom} onChange={(v) => setForm({ ...form, geom: v })} />
+          <GeoFileUpload value={form.geom} onChange={(v, crs, area) => setForm((prev) => ({ 
+            ...prev, 
+            geom: v, 
+            ...(crs ? { coordinate_system: crs } : {}),
+            ...(area ? { area } : {})
+          }))} />
           <SaveBtn saving={saving} onClick={handleSave} />
         </Modal>
       )}
@@ -581,13 +591,18 @@ function Loader() {
 
 function TableHeader({ title, onAdd }) {
   return (
-    <div className="flex items-center justify-between mb-4">
+    <div className="flex items-center justify-between mb-4 no-print">
       <p className="text-sm text-slate-400 font-medium">{title}</p>
-      {onAdd && (
-        <button onClick={onAdd} className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-500 transition-all">
-          <Plus size={15} /> Add New
+      <div className="flex items-center gap-2">
+        <button onClick={() => window.print()} className="flex items-center gap-2 px-3 py-2 bg-slate-800 text-slate-300 border border-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-700 hover:text-white transition-all print-keep">
+          <Printer size={15} /> Print
         </button>
-      )}
+        {onAdd && (
+          <button onClick={onAdd} className="flex items-center gap-2 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-500 transition-all">
+            <Plus size={15} /> Add New
+          </button>
+        )}
+      </div>
     </div>
   )
 }
@@ -597,8 +612,8 @@ function Table({ cols, rows, render }) {
     return <div className="bg-slate-900 border border-slate-800 rounded-xl p-10 text-center text-sm text-slate-500">No records found.</div>
   }
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto">
-      <table className="min-w-full divide-y divide-slate-800">
+    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-x-auto print:border-none print:bg-transparent print:overflow-visible">
+      <table className="min-w-full divide-y divide-slate-800 print-table">
         <thead>
           <tr className="bg-slate-800/50">
             {cols.map((c) => (
@@ -624,7 +639,7 @@ function Badge({ status }) {
     DISMISSED: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
   }
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${colors[status] || 'bg-slate-700 text-slate-300 border-slate-600'}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border print-badge print-badge-${status.toLowerCase()} ${colors[status] || 'bg-slate-700 text-slate-300 border-slate-600'}`}>
       {status}
     </span>
   )
@@ -661,9 +676,21 @@ export default function AdminPage() {
   }[tab]
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-5">
+    <div id="print-root" className="p-6 max-w-7xl mx-auto space-y-5 print-page">
+      {/* Print Report Header */}
+      <div className="hidden print:flex print-report-header">
+        <div>
+          <h1>GIS Mine & Claim Registry</h1>
+          <p>{TABS.find(t => t.key === tab)?.label} Report</p>
+        </div>
+        <div className="print-meta">
+          Generated: {new Date().toLocaleDateString()}<br/>
+          System Administrator
+        </div>
+      </div>
+
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 no-print">
         <div className="p-2 bg-violet-500/10 rounded-lg">
           <Settings size={20} className="text-violet-400" />
         </div>
@@ -674,7 +701,7 @@ export default function AdminPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
+      <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1 no-print">
         {TABS.map(({ key, label, icon: Icon }) => (
           <button
             key={key}

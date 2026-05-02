@@ -1,8 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 * { box-sizing: border-box; }
 
@@ -104,4 +102,81 @@ body {
   padding: 0.65rem 0.9rem;
   font-size: 0.85rem;
   color: #fca5a5;
+}
+
+/* ── Print Styles ─────────────────────────────────── */
+@media print {
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 11pt;
+    margin: 0;
+  }
+
+  nav, aside, .no-print, [data-no-print], button:not(.print-keep) { display: none !important; }
+
+  .print-page {
+    display: block !important;
+    width: 100%;
+    background: white !important;
+    color: #111827 !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  .print-report-header {
+    border-bottom: 2px solid #10b981;
+    padding-bottom: 12pt;
+    margin-bottom: 16pt;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .print-report-header h1 { font-size: 18pt; font-weight: 700; color: #065f46; margin: 0 0 4pt; }
+  .print-report-header p  { font-size: 9pt; color: #6b7280; margin: 0; }
+  .print-report-header .print-meta { text-align: right; font-size: 9pt; color: #6b7280; line-height: 1.6; }
+
+  .print-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; page-break-inside: auto; }
+  .print-table thead th {
+    background: #f0fdf4 !important;
+    color: #065f46 !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 8pt;
+    letter-spacing: 0.04em;
+    padding: 7pt 10pt;
+    border-bottom: 2px solid #10b981;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .print-table tbody tr { page-break-inside: avoid; }
+  .print-table tbody tr:nth-child(even) td { background: #f9fafb !important; }
+  .print-table tbody td {
+    padding: 6pt 10pt;
+    border-bottom: 1px solid #e5e7eb;
+    color: #374151 !important;
+    vertical-align: top;
+    word-break: break-word;
+  }
+  .print-table tbody td:first-child { font-weight: 600; color: #111827 !important; }
+
+  .print-badge { display: inline-block; padding: 1pt 6pt; border-radius: 9999pt; font-size: 8pt; font-weight: 600; border: 1.5px solid currentColor; }
+  .print-badge-active    { color: #059669; }
+  .print-badge-expired   { color: #6b7280; }
+  .print-badge-disputed  { color: #d97706; }
+  .print-badge-revoked   { color: #dc2626; }
+  .print-badge-open      { color: #dc2626; }
+  .print-badge-resolved  { color: #059669; }
+  .print-badge-dismissed { color: #6b7280; }
+
+  .print-section-title { font-size: 13pt; font-weight: 700; color: #065f46; margin: 0 0 10pt; padding-bottom: 4pt; border-bottom: 1px solid #d1fae5; }
+  .print-summary { display: flex; gap: 24pt; margin-bottom: 14pt; font-size: 9pt; color: #6b7280; }
+  .print-summary strong { color: #111827; }
+  .print-footer { margin-top: 20pt; padding-top: 8pt; border-top: 1px solid #e5e7eb; font-size: 8pt; color: #9ca3af; display: flex; justify-content: space-between; }
+
+  @page { size: A4 landscape; margin: 15mm 12mm; }
 }

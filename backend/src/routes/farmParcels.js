@@ -5,6 +5,32 @@ const { authMiddleware } = require('../middleware/auth')
 
 const router = Router()
 
+async function checkAndCreateDisputes(parcelId) {
+  try {
+    // Check for intersections between this newly created/updated farm parcel and existing mine claims.
+    await pool.query(`
+      INSERT INTO disputes_dispute (mine_claim_id, farm_parcel_id, conflict_area, status, geom)
+      SELECT 
+        mc.id AS mine_claim_id,
+        fp.id AS farm_parcel_id,
+        (ST_Area(ST_Intersection(mc.geom::geography, fp.geom::geography)) / 10000.0) AS conflict_area,
+        'OPEN' AS status,
+        ST_Intersection(mc.geom, fp.geom) AS geom
+      FROM spatial_data_mineclaim mc
+      JOIN spatial_data_farmparcel fp ON ST_Intersects(mc.geom, fp.geom) AND ST_GeometryType(ST_Intersection(mc.geom, fp.geom)) IN ('ST_Polygon', 'ST_MultiPolygon')
+      WHERE fp.id = $1
+      ON CONFLICT (mine_claim_id, farm_parcel_id) 
+      DO UPDATE SET
+        conflict_area = EXCLUDED.conflict_area,
+        geom = EXCLUDED.geom,
+        status = 'OPEN',
+        resolved_at = NULL
+    `, [parcelId])
+  } catch (err) {
+    console.error('Error detecting overlaps for farm parcel:', err)
+  }
+}
+
 function parcelFeature(row) {
   return toFeature(row, {
     id: row.id,
@@ -102,6 +128,11 @@ router.post('/', authMiddleware, async (req, res) => {
       ]
     )
     const id = inserted.rows[0].id
+    
+    if (geom) {
+      await checkAndCreateDisputes(id)
+    }
+
     const result = await pool.query(`${SELECT_PARCEL} WHERE fp.id = $1`, [id])
     return res.status(201).json(parcelFeature(result.rows[0]))
   } catch (error) {
@@ -142,6 +173,11 @@ router.put('/:id/', authMiddleware, async (req, res) => {
       values
     )
     if (result.rowCount === 0) return sendError(res, 404, 'Not found.')
+    
+    if (geom !== undefined) {
+      await checkAndCreateDisputes(req.params.id)
+    }
+
     const response = await pool.query(`${SELECT_PARCEL} WHERE fp.id = $1`, [req.params.id])
     return res.json(parcelFeature(response.rows[0]))
   } catch {

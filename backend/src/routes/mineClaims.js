@@ -5,6 +5,55 @@ const { authMiddleware } = require('../middleware/auth')
 
 const router = Router()
 
+async function checkAndCreateDisputes(claimId) {
+  try {
+    // Check for intersections between this newly created/updated mine claim and existing farm parcels.
+    // Insert into disputes_dispute if an intersection exists.
+    await pool.query(`
+      INSERT INTO disputes_dispute (mine_claim_id, farm_parcel_id, conflict_area, status, geom)
+      SELECT 
+        mc.id AS mine_claim_id,
+        fp.id AS farm_parcel_id,
+        (ST_Area(ST_Intersection(mc.geom::geography, fp.geom::geography)) / 10000.0) AS conflict_area,
+        'OPEN' AS status,
+        ST_Intersection(mc.geom, fp.geom) AS geom
+      FROM spatial_data_mineclaim mc
+      JOIN spatial_data_farmparcel fp ON ST_Intersects(mc.geom, fp.geom) AND ST_GeometryType(ST_Intersection(mc.geom, fp.geom)) IN ('ST_Polygon', 'ST_MultiPolygon')
+      WHERE mc.id = $1
+      ON CONFLICT (mine_claim_id, farm_parcel_id) 
+      DO UPDATE SET
+        conflict_area = EXCLUDED.conflict_area,
+        geom = EXCLUDED.geom,
+        status = 'OPEN',
+        resolved_at = NULL
+    `, [claimId])
+
+    // Check for intersections with OTHER mine claims (Mine-to-Mine disputes)
+    await pool.query(`
+      INSERT INTO disputes_mine_mine (mine_claim_a_id, mine_claim_b_id, conflict_area, status, geom)
+      SELECT 
+        LEAST(mc1.id, mc2.id) AS mine_claim_a_id,
+        GREATEST(mc1.id, mc2.id) AS mine_claim_b_id,
+        (ST_Area(ST_Intersection(mc1.geom::geography, mc2.geom::geography)) / 10000.0) AS conflict_area,
+        'OPEN' AS status,
+        ST_Intersection(mc1.geom, mc2.geom) AS geom
+      FROM spatial_data_mineclaim mc1
+      JOIN spatial_data_mineclaim mc2 ON ST_Intersects(mc1.geom, mc2.geom) 
+        AND mc1.id != mc2.id 
+        AND ST_GeometryType(ST_Intersection(mc1.geom, mc2.geom)) IN ('ST_Polygon', 'ST_MultiPolygon')
+      WHERE mc1.id = $1
+      ON CONFLICT (mine_claim_a_id, mine_claim_b_id) 
+      DO UPDATE SET
+        conflict_area = EXCLUDED.conflict_area,
+        geom = EXCLUDED.geom,
+        status = 'OPEN',
+        resolved_at = NULL
+    `, [claimId])
+  } catch (err) {
+    console.error('Error detecting overlaps for mine claim:', err)
+  }
+}
+
 function claimFeature(row) {
   return toFeature(row, {
     id: row.id,
@@ -103,6 +152,11 @@ router.post('/', authMiddleware, async (req, res) => {
       ]
     )
     const id = inserted.rows[0].id
+    
+    if (geom) {
+      await checkAndCreateDisputes(id)
+    }
+
     const result = await pool.query(`${SELECT_CLAIM} WHERE mc.id = $1`, [id])
     return res.status(201).json(claimFeature(result.rows[0]))
   } catch (error) {
@@ -144,6 +198,10 @@ router.put('/:id/', authMiddleware, async (req, res) => {
       values
     )
     if (result.rowCount === 0) return sendError(res, 404, 'Not found.')
+
+    if (geom !== undefined) {
+      await checkAndCreateDisputes(req.params.id)
+    }
 
     const response = await pool.query(`${SELECT_CLAIM} WHERE mc.id = $1`, [req.params.id])
     return res.json(claimFeature(response.rows[0]))

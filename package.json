@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@turf/distance": "^7.3.5",
+    "@turf/helpers": "^7.3.5",
+    "leaflet": "^1.9.4"
+  }
+}

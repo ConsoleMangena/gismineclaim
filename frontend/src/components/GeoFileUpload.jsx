@@ -2,9 +2,27 @@ import { useState, useRef } from 'react'
 import { Upload, FileCheck, AlertCircle, X } from 'lucide-react'
 import shp from 'shpjs'
 import { kml as kmlToGeoJSON } from '@tmcw/togeojson'
+import turfArea from '@turf/area'
 
 const ACCEPT = '.geojson,.json,.zip,.kml,.gpx,.shp'
 const FORMATS = 'GeoJSON, Shapefile (.zip), KML, GPX'
+
+function extractCRS(geojson) {
+  if (!geojson) return null
+  const target = Array.isArray(geojson) ? geojson[0] : geojson
+  if (target?.crs?.properties?.name) {
+    const name = target.crs.properties.name.toUpperCase()
+    const epsgMatch = name.match(/EPSG::?(\d+)/) || name.match(/EPSG:(\d+)/)
+    if (epsgMatch) return `EPSG:${epsgMatch[1]}`
+    if (name.includes('URN:OGC:DEF:CRS:EPSG')) {
+      const parts = name.split(':')
+      return `EPSG:${parts[parts.length - 1]}`
+    }
+    return name
+  }
+  // KML, GPX, and generic GeoJSON default to WGS84. shpjs usually parses into WGS84 as well.
+  return 'WGS84'
+}
 
 function extractFirstGeometry(geojson) {
   if (!geojson) return null
@@ -24,13 +42,13 @@ function extractFirstGeometry(geojson) {
 async function parseGeoJSON(file) {
   const text = await file.text()
   const parsed = JSON.parse(text)
-  return extractFirstGeometry(parsed)
+  return { geometry: extractFirstGeometry(parsed), crs: extractCRS(parsed) }
 }
 
 async function parseShapefile(file) {
   const buffer = await file.arrayBuffer()
   const parsed = await shp(buffer)
-  return extractFirstGeometry(parsed)
+  return { geometry: extractFirstGeometry(parsed), crs: extractCRS(parsed) }
 }
 
 async function parseKML(file) {
@@ -38,7 +56,7 @@ async function parseKML(file) {
   const parser = new DOMParser()
   const doc = parser.parseFromString(text, 'text/xml')
   const converted = kmlToGeoJSON(doc)
-  return extractFirstGeometry(converted)
+  return { geometry: extractFirstGeometry(converted), crs: 'WGS84' }
 }
 
 async function parseGPX(file) {
@@ -47,7 +65,7 @@ async function parseGPX(file) {
   const parser = new DOMParser()
   const doc = parser.parseFromString(text, 'text/xml')
   const converted = gpxToGeoJSON(doc)
-  return extractFirstGeometry(converted)
+  return { geometry: extractFirstGeometry(converted), crs: 'WGS84' }
 }
 
 async function parseFile(file) {
@@ -73,11 +91,21 @@ export default function GeoFileUpload({ value, onChange }) {
     setMessage('')
 
     try {
-      const geometry = await parseFile(file)
+      const { geometry, crs } = await parseFile(file)
       if (!geometry) throw new Error('No geometry found in file.')
-      onChange(JSON.stringify(geometry))
+      
+      let calcArea = 0
+      try {
+        if (geometry.type.includes('Polygon')) {
+          calcArea = turfArea(geometry) / 10000 // m² to hectares
+        }
+      } catch (e) {
+        // Area calculation failed
+      }
+      
+      onChange(JSON.stringify(geometry), crs, calcArea > 0 ? calcArea.toFixed(4) : '')
       setStatus('success')
-      setMessage(`${geometry.type} extracted from ${file.name}`)
+      setMessage(`${geometry.type} extracted from ${file.name}${crs ? ` (${crs})` : ''}`)
     } catch (err) {
       setStatus('error')
       setMessage(err.message || 'Failed to parse file.')
@@ -132,7 +160,14 @@ export default function GeoFileUpload({ value, onChange }) {
           className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 outline-none focus:border-emerald-500 transition-colors h-20 font-mono"
           value={value}
           onChange={(e) => {
-            onChange(e.target.value)
+            let calcArea = ''
+            try {
+              const geom = JSON.parse(e.target.value)
+              if (geom && geom.type && geom.type.includes('Polygon')) {
+                calcArea = (turfArea(geom) / 10000).toFixed(4)
+              }
+            } catch (err) {}
+            onChange(e.target.value, null, calcArea)
             setStatus(null)
             setMessage('')
           }}

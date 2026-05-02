@@ -19,6 +19,7 @@ const mineDisputesRouter = require('./routes/mineDisputes')
 const hotspotsRouter = require('./routes/hotspots')
 const analysisRouter = require('./routes/analysis')
 const reportsRouter = require('./routes/reports')
+const trigStationsRouter = require('./routes/trigStations')
 
 const app = express()
 
@@ -56,6 +57,7 @@ app.use('/api/mine-disputes', mineDisputesRouter)
 app.use('/api/hotspots', hotspotsRouter)
 app.use('/api/analysis', analysisRouter)
 app.use('/api/reports', reportsRouter)
+app.use('/api/trig-stations', trigStationsRouter)
 
 app.use('/api', (_req, res) => sendError(res, 404, 'Not found.'))
 
